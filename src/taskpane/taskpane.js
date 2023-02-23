@@ -8,6 +8,8 @@
 var SHEET_NAME_BDD = "_BDD";
 var BASE_ETAPES_NOM_TABLE = "baseEtapes";
 var BASE_PARENTS_NOM_TABLE = "baseParents";
+var SHEET_NAME_DONNEES_ENTREE = "Données_entrée";
+var SHEET_NAME_TABLE_CONFIG = "Configuration - Entrées Sorties";
 
 Office.onReady((info) => {
   if (info.host === Office.HostType.Excel) {
@@ -29,7 +31,7 @@ export async function app() {
       const baseEtapes = BDD[0];
       const baseParents = BDD[1];
       const worksheetsEtapes = await initSheets(baseEtapes);
-      //console.log(worksheetsEtapes);
+      await EtapeUne(baseEtapes[0], worksheetsEtapes[0]);
       return context;
     } catch (error) {
       console.error(error);
@@ -41,9 +43,10 @@ export async function app() {
 async function initSheets(baseEtapes) {
   return new Promise((resolve, reject) => {
     Excel.run(async (context) => {
-      const worksheetsEtapes = [];
-      console.log(baseEtapes);
-      baseEtapes.forEach(async (etape) => {
+      let worksheetsEtapes = [];
+      let newSheet = null;
+      const sheetBDD = context.workbook.worksheets.getItem(SHEET_NAME_BDD);
+      for (const etape of baseEtapes) {
         const id = etape[0]; //premier élément de la rangée est le nom de l'étape
         const nomEtape = etape[1]; //deuxième élément de la rangée est le nom de la feuille
         const nomFeuille = nomEtape + "|" + id;
@@ -53,31 +56,18 @@ async function initSheets(baseEtapes) {
           const sheetModel = context.workbook.worksheets.getItem("MODEL_" + nomEtape);
           await context.sync();
           //dupliquer la feuille de base
-          if (worksheetsEtapes.length === 0) {
-            const newSheet = sheetModel.copy();
-            await context.sync();
-            //set name of new sheet
-            newSheet.name = nomFeuille;
-            newSheet.visibility = "Visible";
-            await context.sync();
-            // ajouter la feille à la liste de feuilles
-            worksheetsEtapes.push(newSheet);
-          } else {
-            const newSheet = sheetModel.copy(
-              Excel.WorksheetPositionType.after,
-              worksheetsEtapes[worksheetsEtapes.length - 1]
-            );
-            await context.sync();
-            //set name of new sheet
-            newSheet.name = nomFeuille;
-            newSheet.visibility = "Visible";
-            await context.sync();
-            // ajouter la feille à la liste de feuilles
-            worksheetsEtapes.push(newSheet);
-          }
+          let newSheet = sheetModel.copy("Before", sheetBDD);
+          await context.sync();
+          //set name of new sheet
+          newSheet.name = nomFeuille;
+          newSheet.visibility = "Visible";
         }
-      });
+        await context.sync();
+        worksheetsEtapes.push(nomFeuille);
+      }
       await context.sync();
+      console.log(worksheetsEtapes);
+      deleteOldEtapes(worksheetsEtapes);
       resolve(worksheetsEtapes);
     }).catch((error) => reject(error));
   });
@@ -88,12 +78,14 @@ async function getBDD() {
     Excel.run(async (context) => {
       const sheetBDD = context.workbook.worksheets.getItem(SHEET_NAME_BDD);
       const baseEtapes = sheetBDD.tables.getItem(BASE_ETAPES_NOM_TABLE).getRange().getUsedRange();
+      // eslint-disable-next-line prettier/prettier
       const baseParents = sheetBDD.tables.getItem(BASE_PARENTS_NOM_TABLE).getRange().getUsedRange();
-      //const baseEtapes = sheetBDD.getRange("A2:B150").getUsedRange();
-      //const baseParents = sheetBDD.getRange("F2:H150").getUsedRange();
       baseEtapes.load("values");
       baseParents.load("values");
       await context.sync();
+      //enlevr la première ligne qui contient les noms des colonnes
+      baseEtapes.values.shift();
+      baseParents.values.shift();
       resolve([baseEtapes.values, baseParents.values]);
     }).catch((error) => reject(error));
   });
@@ -135,6 +127,32 @@ async function sortBDD() {
   });
 }
 
+async function deleteOldEtapes(tabNomWorksheet) {
+  await Excel.run(async (context) => {
+    // Récupération de tous les worksheets du classeur
+    const worksheets = context.workbook.worksheets;
+    worksheets.load("items/name");
+    await context.sync();
+    // On parcourt tous les worksheets et on supprime ceux qui ne sont pas dans la base (et qui ne sont pas le modèle, ou la table de configuration)
+    for (let i = 0; i < worksheets.items.length; i++) {
+      const worksheet = worksheets.items[i];
+      if (worksheet.name.includes("|") && !tabNomWorksheet.includes(worksheet.name)) {
+        worksheet.delete();
+      }
+    }
+    await context.sync();
+  });
+}
+
+async function EtapeUne(etape, nomFeuille) {
+  await Excel.run(async (context) => {
+    //get worksheet
+    const worksheet = context.workbook.worksheets.getItem(nomFeuille);
+    //get données d'entrées
+    const donneesEntrees = worksheet.tables.getItem(SHEET_NAME_DONNEES_ENTREE);
+    await context.sync();
+  });
+}
 
 async function createTable() {
   await Excel.run(async (context) => {
