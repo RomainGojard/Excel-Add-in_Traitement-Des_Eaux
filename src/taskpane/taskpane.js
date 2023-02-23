@@ -5,6 +5,10 @@
 
 /* global console, document, Excel, Office */
 
+var SHEET_NAME_BDD = "_BDD";
+var BASE_ETAPES_NOM_TABLE = "baseEtapes";
+var BASE_PARENTS_NOM_TABLE = "baseParents";
+
 Office.onReady((info) => {
   if (info.host === Office.HostType.Excel) {
     document.getElementById("sideload-msg").style.display = "none";
@@ -18,6 +22,7 @@ Office.onReady((info) => {
 export async function app() {
   Excel.run(async (context) => {
     try {
+      await sortBDD();
       const BDD = await getBDD();
       console.log(BDD);
       await context.sync();
@@ -81,10 +86,11 @@ async function initSheets(baseEtapes) {
 async function getBDD() {
   return new Promise((resolve, reject) => {
     Excel.run(async (context) => {
-      const SHEET_NAME_BDD = "_BDD";
       const sheetBDD = context.workbook.worksheets.getItem(SHEET_NAME_BDD);
-      const baseEtapes = sheetBDD.getRange("A2:B150").getUsedRange();
-      const baseParents = sheetBDD.getRange("F2:H150").getUsedRange();
+      const baseEtapes = sheetBDD.tables.getItem(BASE_ETAPES_NOM_TABLE).getRange().getUsedRange();
+      const baseParents = sheetBDD.tables.getItem(BASE_PARENTS_NOM_TABLE).getRange().getUsedRange();
+      //const baseEtapes = sheetBDD.getRange("A2:B150").getUsedRange();
+      //const baseParents = sheetBDD.getRange("F2:H150").getUsedRange();
       baseEtapes.load("values");
       baseParents.load("values");
       await context.sync();
@@ -103,6 +109,32 @@ async function worksheetExists(worksheetName) {
     }).catch((error) => reject(error));
   });
 }
+
+async function sortBDD() {
+  await Excel.run(async (context) => {
+    const sheetBDD = context.workbook.worksheets.getItem(SHEET_NAME_BDD);
+    const baseEtapes = sheetBDD.tables.getItem(BASE_ETAPES_NOM_TABLE);
+    const baseParents = sheetBDD.tables.getItem(BASE_PARENTS_NOM_TABLE);
+    const sortFieldsEtapes = [
+      {
+        key: 0, // colonne id_etapes
+        ascending: true,
+      },
+    ];
+
+    const sortFieldsParents = [
+      {
+        key: 0, // colonne id_etape_parent
+        ascending: true,
+      },
+    ];
+
+    baseEtapes.sort.apply(sortFieldsEtapes);
+    baseParents.sort.apply(sortFieldsParents);
+    await context.sync();
+  });
+}
+
 
 async function createTable() {
   await Excel.run(async (context) => {
@@ -150,21 +182,7 @@ async function filterTable() {
   });
 }
 
-async function sortTable() {
-  await Excel.run(async (context) => {
-    const currentWorksheet = context.workbook.worksheets.getActiveWorksheet();
-    const expensesTable = currentWorksheet.tables.getItem("ExpensesTable");
-    const sortFields = [
-      {
-        key: 1, // Merchant column
-        ascending: false,
-      },
-    ];
 
-    expensesTable.sort.apply(sortFields);
-    await context.sync();
-  });
-}
 
 let dialog = null;
 
