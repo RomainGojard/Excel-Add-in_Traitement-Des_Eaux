@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+    <head lang="en">
+        <title>Dialog for My Office Add-in</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <!-- For more information on Fluent UI, visit https://developer.microsoft.com/fluentui. -->
+        <link rel="stylesheet" href="https://static2.sharepointonline.com/files/fabric/office-ui-fabric-core/9.6.1/css/fabric.min.css"/>
+
+        <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+        <script type="text/javascript" src="popup.js"></script>
+
+    </head>
+    <body style="display:flex;flex-direction:column;align-items:center;justify-content:center">
+
+        </script>
+
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Tableau dynamique</title>
+          </head>
+          <body>
+            <table id="tableau">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Étape</th>
+                  <th>Pourcentage débit</th>
+                  <th>Parent</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>1</td>
+                  <td>
+                    <select>
+                      <option value="">Sélectionnez une étape</option>
+                      <script>
+                        sheetNames = ["Etape 1", "Etape 2", "Etape 3"];
+                        // Remplir les options de la colonne "Choix" avec les noms des feuilles de calcul
+                        sheetNames.forEach(name => {
+                          document.write(`<option value="${name}">${name}</option>`);
+                        });
+                    </script>
+                    </select>
+                  </td>
+                  <td><input type="text" name="pourcentage" value=""></td>
+                  <td>
+                    <select name="reference">
+                      <option value="">Aucun parent</option>
+                    </select>
+                  </td>
+                  <!--<td><button type="button" onclick="supprimerLigne(this)">Supprimer</button></td> -->
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="5">
+                    <button type="button" onclick="ajouterLigne()">Ajouter une ligne</button>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+            
+            <script>
+            
+
+              let compteur = 2;
+              
+            function ajouterLigne() {
+            const tableau = document.getElementById("tableau").getElementsByTagName('tbody')[0];
+            const nouvelleLigne = tableau.insertRow(tableau.rows.length);
+            const celluleId = nouvelleLigne.insertCell(0);
+            celluleId.innerHTML = compteur++;
+            const celluleChoix = nouvelleLigne.insertCell(1);
+            // Remplir les options de la colonne "Choix" avec les sheetsNames
+            celluleChoix.innerHTML = `
+            <select>
+            <option value="null">Sélectionnez une étape</option>
+            <option value="Etape 1">Etape 1</option>
+            <option value="Etape 2">Etape 2</option>
+            <option value="Etape 3">Etape 3</option>
+            </select>`;
+
+
+            const cellulePourcentage = nouvelleLigne.insertCell(2);
+            cellulePourcentage.innerHTML = '<input type="text" name="pourcentage">';
+            const celluleReference = nouvelleLigne.insertCell(3);
+            celluleReference.innerHTML = construireListeReferences();
+            const celluleAction = nouvelleLigne.insertCell(4);
+            celluleAction.innerHTML = '<button type="button" onclick="supprimerLigne(this)">Supprimer</button>';
+            miseAJourListeReferences();
+            }
+
+              
+            function supprimerLigne(bouton) {
+                const ligne = bouton.closest('tr');
+                ligne.parentNode.removeChild(ligne);
+                miseAJourListeReferences();
+            }
+
+              
+              function construireListeReferences() {
+                const liste = document.createElement("select");
+                liste.name = "reference";
+                const optionAucuneReference = document.createElement("option");
+                optionAucuneReference.value = "";
+                optionAucuneReference.textContent = "Aucun parent";
+                liste.appendChild(optionAucuneReference);
+                return liste.outerHTML;
+            }
+
+            function miseAJourListeReferences() {
+                const lignes = document.querySelectorAll("#tableau tbody tr");
+                const ids = Array.from(lignes, ligne => ligne.querySelector("td:first-child").textContent);
+                const options = Array.from(document.querySelectorAll(`#tableau tbody select[name='reference'] option:not(:first-child)`));
+                options.forEach(option => {
+                    option.remove();
+                });
+                lignes.forEach(ligne => {
+                    const liste = ligne.querySelector("td:nth-child(4) select");
+                    ids.forEach(id => {
+                    if (id !== ligne.querySelector("td:first-child").textContent) {
+                        const option = document.createElement("option");
+                        option.value = id;
+                        option.textContent = id;
+                        liste.appendChild(option);
+                    }
+                    });
+                });
+            }
+
+
+            /*
+            function miseAJourListeReferences() {
+            const lignes = document.querySelectorAll("#tableau tbody tr");
+            for (let i = 0; i < lignes.length; i++) {
+                let id = lignes[i].querySelector("td:first-child").textContent;
+                let options = document.querySelectorAll(`#tableau tbody select[name='reference'] option:not(:first-child)`);
+                while (options.firstChild) {
+                    options.removeChild(options.firstChild);
+                }
+                let liste = lignes[i].querySelector("td:nth-child(4) select");
+                lignes.forEach(ligne => {
+                let option = document.createElement("option");
+                option.value = ligne.querySelector("td:first-child").textContent;
+                option.textContent = option.value;
+                if (option.value !== id) {
+                    liste.appendChild(option);
+                }
+                });
+            }
+            }
+*/
+
+    </script>
+  </body>
+</html>
+
