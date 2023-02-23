@@ -17,79 +17,90 @@ Office.onReady((info) => {
 
 export async function app() {
   Excel.run(async (context) => {
-    const SHEET_NAME_BDD = "_BDD";
-    const sheetBDD = context.workbook.worksheets.getItem(SHEET_NAME_BDD);
-    const baseEtapes = sheetBDD.getRange("A2:B150").getUsedRange();
-    baseEtapes.load("values");
-    await context.sync();
-    baseEtapes.values.forEach(async (etape) => {
-      const id = etape[0]; //premier élément de la rangée est le nom de l'étape
-      const nomEtape = etape[1]; //deuxième élément de la rangée est le nom de la feuille
-      const nomFeuille = nomEtape + "|" + id;
-      //vérifier s'il n'y a pas déjà une feuille avec ce nom
-      const sheetExists = context.workbook.worksheets.getItemOrNullObject(nomFeuille);
+    try {
+      const BDD = await getBDD();
+      console.log(BDD);
       await context.sync();
-      console.log(sheetExists.isNullObject);
-      if (sheetExists.isNullObject) {
-        //obtenir le modèle de la feuille
-        const sheetModel = context.workbook.worksheets.getItem("MODEL_" + nomEtape);
-        //dupliquer la feuille de base
-        const newSheet = sheetModel.copy(Excel.WorksheetPositionType.before, sheetBDD);
-        await context.sync();
-        //set name of new sheet
-        newSheet.name = nomFeuille;
-        newSheet.visibility = "Visible";
-        await context.sync();
-      }
-    });
-    return context;
+      const baseEtapes = BDD[0];
+      const baseParents = BDD[1];
+      const worksheetsEtapes = await initSheets(baseEtapes);
+      //console.log(worksheetsEtapes);
+      return context;
+    } catch (error) {
+      console.error(error);
+      return context.sync();
+    }
   });
 }
 
-/*const baseEtapes = [
-    [1, "Acidification"],
-    [2, "Clarif"],
-    [3, "FAS"],
-    [4, "Acidification"],
-    [5, "Désinf"],
-  ];*/
-//const baseEtapes = sheetBDD.getRange("A2:B150");
-//baseEtapes.load("values");
-/*
-    baseEtapes.values.forEach((etape) => {
-      const id = etape[0]; //premier élément de la rangée est le nom de l'étape
-      const nomEtape = etape[1]; //deuxième élément de la rangée est le nom de la feuille
-      const nomFeuille = nomEtape + "|" + id;
-      //dupliquer la feuille de base
-      sheetBDD.copy(nomFeuille);
-    });
-    */
-
-// await context.sync(); //synchroniser le contexte avec le serveur Excel après la création de toutes les feuilles
-
-async function duplicateSheet(sheetName, newSheetName) {
-  await Excel.run(async (context) => {
-    const sheet = context.workbook.worksheets.getItem(sheetName);
-    sheet.copy(newSheetName, Excel.WorksheetPositionType.after);
-    await context.sync();
+async function initSheets(baseEtapes) {
+  return new Promise((resolve, reject) => {
+    Excel.run(async (context) => {
+      const worksheetsEtapes = [];
+      console.log(baseEtapes);
+      baseEtapes.forEach(async (etape) => {
+        const id = etape[0]; //premier élément de la rangée est le nom de l'étape
+        const nomEtape = etape[1]; //deuxième élément de la rangée est le nom de la feuille
+        const nomFeuille = nomEtape + "|" + id;
+        const sheetExists = await worksheetExists(nomFeuille);
+        if (!sheetExists) {
+          //obtenir le modèle de la feuille
+          const sheetModel = context.workbook.worksheets.getItem("MODEL_" + nomEtape);
+          await context.sync();
+          //dupliquer la feuille de base
+          if (worksheetsEtapes.length === 0) {
+            const newSheet = sheetModel.copy();
+            await context.sync();
+            //set name of new sheet
+            newSheet.name = nomFeuille;
+            newSheet.visibility = "Visible";
+            await context.sync();
+            // ajouter la feille à la liste de feuilles
+            worksheetsEtapes.push(newSheet);
+          } else {
+            const newSheet = sheetModel.copy(
+              Excel.WorksheetPositionType.after,
+              worksheetsEtapes[worksheetsEtapes.length - 1]
+            );
+            await context.sync();
+            //set name of new sheet
+            newSheet.name = nomFeuille;
+            newSheet.visibility = "Visible";
+            await context.sync();
+            // ajouter la feille à la liste de feuilles
+            worksheetsEtapes.push(newSheet);
+          }
+        }
+      });
+      await context.sync();
+      resolve(worksheetsEtapes);
+    }).catch((error) => reject(error));
   });
 }
 
-export async function getBDD() {
-  const SHEET_NAME_BDD = "_BDD";
-  Excel.run(async (context) => {
-    const sheetBDD = context.workbook.worksheets.getItem(SHEET_NAME_BDD);
-    const allBaseEtapes = sheetBDD.getRange("A2:B150");
-    allBaseEtapes.load("values");
-    const ctx = await context.sync();
-    const baseEtapes = [];
-    baseEtapes.values.forEach((etape) => {
-      if (etape[0] !== "") {
-        baseEtapes.push(etape);
-      }
-    });
-    console.log(baseEtapes);
-    return ctx;
+async function getBDD() {
+  return new Promise((resolve, reject) => {
+    Excel.run(async (context) => {
+      const SHEET_NAME_BDD = "_BDD";
+      const sheetBDD = context.workbook.worksheets.getItem(SHEET_NAME_BDD);
+      const baseEtapes = sheetBDD.getRange("A2:B150").getUsedRange();
+      const baseParents = sheetBDD.getRange("F2:H150").getUsedRange();
+      baseEtapes.load("values");
+      baseParents.load("values");
+      await context.sync();
+      resolve([baseEtapes.values, baseParents.values]);
+    }).catch((error) => reject(error));
+  });
+}
+
+async function worksheetExists(worksheetName) {
+  return new Promise((resolve, reject) => {
+    Excel.run(async (context) => {
+      const worksheets = context.workbook.worksheets;
+      const worksheet = worksheets.getItemOrNullObject(worksheetName);
+      await context.sync();
+      resolve(worksheet.isNullObject ? false : true);
+    }).catch((error) => reject(error));
   });
 }
 
