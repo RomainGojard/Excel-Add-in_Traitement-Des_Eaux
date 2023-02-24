@@ -251,15 +251,24 @@ async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes) {
       for (let j = 0; j < 4; j++) {
         const targetCell = worksheetTarget.getRange(colonnesTarget[j][i][0]);
         switch (colonneTypeChamp[0][i][0]) {
-          case "Débit":
+          case "Débit": {
+            const value = calculeCelluleDebit(tabSources, j, i);
+            console.log(value);
             targetCell.values = [[calculeCelluleDebit(tabSources, j, i)]];
             break;
-          case "Concentration":
+          }
+          case "Concentration": {
+            const value = calculeCelluleDebit(tabSources, j, i);
+            console.log(value);
             targetCell.values = [[calculeCelluleConcentration(tabSources, j, i)]];
             break;
-          case "Température":
+          }
+          case "Température": {
+            const value = calculeCelluleDebit(tabSources, j, i);
+            console.log(value);
             targetCell.values = [[calculeCelluleTemperature(tabSources, j, i)]];
             break;
+          }
         }
       }
     }
@@ -272,7 +281,6 @@ function calculeCelluleDebit(tabSources, j, i) {
   tabSources.forEach((source) => {
     result += `+${source.slice(-1)}!${source[j][i][0]}`;
   });
-  console.log(result);
   return result;
 }
 function calculeCelluleConcentration(tabSources, j, i) {
@@ -280,7 +288,6 @@ function calculeCelluleConcentration(tabSources, j, i) {
   tabSources.forEach((source) => {
     result += `+${source.slice(-1)}!${source[j][i][0]}`;
   });
-  console.log(result);
   return result;
 }
 function calculeCelluleTemperature(tabSources, j, i) {
@@ -288,7 +295,6 @@ function calculeCelluleTemperature(tabSources, j, i) {
   tabSources.forEach((source) => {
     result += `+${source.slice(-1)}!${source[j][i][0]}`;
   });
-  console.log(result);
   return result;
 }
 
