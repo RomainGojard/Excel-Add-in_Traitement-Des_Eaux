@@ -31,14 +31,16 @@ export async function app() {
       const baseEtapes = BDD[0];
       const baseParents = BDD[1];
       const worksheetsEtapes = await initSheets(baseEtapes);
-      baseEtapes.forEach((etape) => {
+      baseEtapes.forEach(async (etape) => {
         if (etape[0] == 1) {
           EtapeUne(etape, worksheetsEtapes[0]);
         } else {
-          const idEtape = etape[0];
-          // obtenir les parents de l'étape en cours depuis la base parents
-          const parents = baseParents.filter((ligne) => ligne[1] == idEtape);
-          EtapeN(etape, worksheetsEtapes[idEtape - 1], parents, baseEtapes, worksheetsEtapes);
+          if (etape[0] == 2) {
+            const idEtape = etape[0];
+            // obtenir les parents de l'étape en cours depuis la base parents
+            const parents = baseParents.filter((ligne) => ligne[1] == idEtape);
+            EtapeN(etape, worksheetsEtapes[idEtape - 1], parents, baseEtapes, worksheetsEtapes);
+          }
         }
       });
       await context.sync();
@@ -191,8 +193,8 @@ async function EtapeUne(etape, nomFeuille) {
   });
 }
 
-async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes, worksheetsEtapes) {
-  const NOM_DONNEES_ENTREE = "DONNEES_ENTREES";
+async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes) {
+  const NOM_COLONNE_TYPE_DE_CHAMP = "TYPE_DE_CHAMP";
   await Excel.run(async (context) => {
     //nom de l'étape
     const nomEtapeTarget = etape[1];
@@ -211,28 +213,83 @@ async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes, worksheetsEt
       const nomEtapeParent = baseEtapes.find((row) => row[0] === parent[0])[1];
       //obtenir le nom du worksheet du parent
       const nomWorksheetParent = nomEtapeParent + "|" + parent[0];
-      // on ajoute une dernière colonne qui contient le nom du worksheet du parent
-      tabSources.push(
-        await obtenirColonnesParNomEnTete(SHEET_NAME_TABLE_CONFIG, TABLE_CONFIG_NOM, nomEtapeParent + "_Sortie")
+      const result = await obtenirColonnesParNomEnTete(
+        SHEET_NAME_TABLE_CONFIG,
+        TABLE_CONFIG_NOM,
+        nomEtapeParent + "_Sortie"
       );
+      result.push(nomWorksheetParent);
+      tabSources.push(result);
     });
-    console.log("tabSources de l'étape " + idEtape + " : " + tabSources);
-    // eslint-disable-next-line prettier/prettier
-    const colonnesTarget = await obtenirColonnesParNomEnTete(SHEET_NAME_TABLE_CONFIG, TABLE_CONFIG_NOM, nomEtapeTarget + "_Entrée");
-    //vérifier que les colonnes fdonnes entrees et colonnesEtapeUneEntree ont la même longueur
+    const colonnesTarget = await obtenirColonnesParNomEnTete(
+      SHEET_NAME_TABLE_CONFIG,
+      TABLE_CONFIG_NOM,
+      nomEtapeTarget + "_Entrée"
+    );
+    const colonneTypeChamp = await obtenirColonnesParNomEnTete(
+      SHEET_NAME_TABLE_CONFIG,
+      TABLE_CONFIG_NOM,
+      NOM_COLONNE_TYPE_DE_CHAMP
+    );
 
-    /*// parcourir pour i allant de 1 à la longueur de la colonne des données d'entrées
-    for (let i = 1; i < colonnesDonnesEntrees[0].length; i++) {
+    //vérifier que les colonnes target colonnes de tabSources et type champ ont la même longueur
+    if (
+      colonnesTarget[0].length !== tabSources[0][0].length &&
+      colonnesTarget[0].length !== colonneTypeChamp[0].length &&
+      colonneTypeChamp[0].length !== tabSources[0][0].length
+    ) {
+      console.log(colonnesTarget[0] + " vs " + tabSources[0][0]);
+      throw new Error("Les colonnes target et colonnes de tabSources n'ont pas la même longueur : \n");
+    }
+    console.log(tabSources);
+    console.log(colonnesTarget);
+    console.log(colonneTypeChamp[0]);
+
+    //parcourir pour i allant de 1 à la longueur de la colonne de target
+    for (let i = 1; i < colonnesTarget[0].length; i++) {
       // for de 0 à 3 pour les 4 colonnes de la table de configuration
       for (let j = 0; j < 4; j++) {
-        const targetCell = worksheet.getRange(colonnesEtapeUneEntree[j][i][0]);
-        // mettre l'addresse contenu dans donnees d'entrées dans la cellule en cours
-        targetCell.values = [[`=${SHEET_NAME_DONNEES_ENTREE}!${colonnesDonnesEntrees[j][i][0]}`]];
+        const targetCell = worksheetTarget.getRange(colonnesTarget[j][i][0]);
+        switch (colonneTypeChamp[0][i][0]) {
+          case "Débit":
+            targetCell.values = [[calculeCelluleDebit(tabSources, j, i)]];
+            break;
+          case "Concentration":
+            targetCell.values = [[calculeCelluleConcentration(tabSources, j, i)]];
+            break;
+          case "Température":
+            targetCell.values = [[calculeCelluleTemperature(tabSources, j, i)]];
+            break;
+        }
       }
     }
-    */
     await context.sync();
   });
+}
+
+function calculeCelluleDebit(tabSources, j, i) {
+  let result = "=";
+  tabSources.forEach((source) => {
+    result += `+${source.slice(-1)}!${source[j][i][0]}`;
+  });
+  console.log(result);
+  return result;
+}
+function calculeCelluleConcentration(tabSources, j, i) {
+  let result = "=";
+  tabSources.forEach((source) => {
+    result += `+${source.slice(-1)}!${source[j][i][0]}`;
+  });
+  console.log(result);
+  return result;
+}
+function calculeCelluleTemperature(tabSources, j, i) {
+  let result = "=";
+  tabSources.forEach((source) => {
+    result += `+${source.slice(-1)}!${source[j][i][0]}`;
+  });
+  console.log(result);
+  return result;
 }
 
 async function obtenirColonnesParNomEnTete(nomFeuille, nomTableau, debutEnTete) {
@@ -258,31 +315,6 @@ async function obtenirColonnesParNomEnTete(nomFeuille, nomTableau, debutEnTete) 
   return result;
 }
 
-async function createTable() {
-  await Excel.run(async (context) => {
-    const currentWorksheet = context.workbook.worksheets.getActiveWorksheet();
-    const expensesTable = currentWorksheet.tables.add("A1:D1", true /*hasHeaders*/);
-    expensesTable.name = "ExpensesTable";
-
-    expensesTable.getHeaderRowRange().values = [["Date", "Merchant", "Category", "Amount"]];
-
-    expensesTable.rows.add(null /*add at the end*/, [
-      ["1/1/2017", "The Phone Company", "Communications", "120"],
-      ["1/2/2017", "Northwind Electric Cars", "Transportation", "142.33"],
-      ["1/5/2017", "Best For You Organics Company", "Groceries", "27.9"],
-      ["1/10/2017", "Coho Vineyard", "Restaurant", "33"],
-      ["1/11/2017", "Bellows College", "Education", "350.1"],
-      ["1/15/2017", "Trey Research", "Other", "135"],
-      ["1/15/2017", "Best For You Organics Company", "Groceries", "97.88"],
-    ]);
-
-    expensesTable.columns.getItemAt(3).getRange().numberFormat = [["\u20AC#,##0.00"]];
-    expensesTable.getRange().format.autofitColumns();
-    expensesTable.getRange().format.autofitRows();
-    await context.sync();
-  });
-}
-
 /** Default helper for invoking an action and handling errors. */
 async function tryCatch(callback) {
   try {
@@ -303,8 +335,6 @@ async function filterTable() {
     await context.sync();
   });
 }
-
-
 
 let dialog = null;
 
