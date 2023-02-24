@@ -160,17 +160,26 @@ async function EtapeUne(etape, nomFeuille) {
     const tableConfig = worksheetTableConfig.tables.getItem(TABLE_CONFIG_NOM).getRange().getUsedRange();
     //charger les values
     tableConfig.load("values");
+    worksheet.load("values");
+    donneesEntrees.load("values");
     await context.sync();
-    //on récupère les en-têtes de colonne
-    const headers = tableConfig.values[0];
-    //on filtre les indices des colonnes dont l'en-tête commence par NOM_DONNEES_ENTREE
-    const indices = headers
-      .map((header, index) => (header.startsWith(NOM_DONNEES_ENTREE) ? index : -1))
-      .filter((index) => index >= 0);
     const colonnesDonnesEntrees = await obtenirColonnesParNomEnTete(nomFeuille, TABLE_CONFIG_NOM, NOM_DONNEES_ENTREE);
     // eslint-disable-next-line prettier/prettier
     const colonnesEtapeUneEntree = await obtenirColonnesParNomEnTete(nomFeuille, TABLE_CONFIG_NOM, nomEtape + "_Entrée");
-    
+    //vérifier que les colonnes fdonnes entrees et colonnesEtapeUneEntree ont la même longueur
+    if (colonnesDonnesEntrees[0].length !== colonnesEtapeUneEntree[0].length) {
+      throw new Error("Les colonnes données d'entrées et colonnesEtapeUneEntree n'ont pas la même longueur");
+    }
+    // parcourir pour i allant de 1 à la longueur de la colonne des données d'entrées
+    for (let i = 1; i < colonnesDonnesEntrees[0].length; i++) {
+      // for de 0 à 3 pour les 4 colonnes de la table de configuration
+      for (let j = 0; j < 4; j++) {
+        const targetCell = worksheet.getRange(colonnesEtapeUneEntree[j][i][0]);
+        // mettre l'addresse contenu dans donnees d'entrées dans la cellule en cours
+        targetCell.values = [[`=${SHEET_NAME_DONNEES_ENTREE}!${colonnesDonnesEntrees[j][i][0]}`]];
+      }
+    }
+    await context.sync();
   });
 }
 
