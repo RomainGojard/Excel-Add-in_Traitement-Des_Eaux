@@ -2,15 +2,15 @@
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0" xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="TaskPaneApp">
   <Id>378b3d05-e29b-4531-b54b-33d182564340</Id>
   <Version>1.0.0.0</Version>
-  <ProviderName>Contoso</ProviderName>
-  <DefaultLocale>en-US</DefaultLocale>
+  <ProviderName>cabinetmerlin</ProviderName>
+  <DefaultLocale>fr-FR</DefaultLocale>
   <DisplayName DefaultValue="TestExcelOfficeAdd-In"/>
   <Description DefaultValue="A template to get started."/>
   <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png"/>
   <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-64.png"/>
   <SupportUrl DefaultValue="https://www.contoso.com/help"/>
   <AppDomains>
-    <AppDomain>https://www.office.com</AppDomain>
+    <AppDomain>https://cabinetmerlin.onmicrosoft.com</AppDomain> <!-- This is the default value. -->
   </AppDomains>
   <Hosts>
     <Host Name="Workbook"/>
@@ -74,11 +74,11 @@
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="Get started with your sample add-in!"/>
         <bt:String id="CommandsGroup.Label" DefaultValue="Commands Group"/>
-        <bt:String id="TaskpaneButton.Label" DefaultValue="Show Taskpane"/>
+        <bt:String id="TaskpaneButton.Label" DefaultValue="Voir le panneau de contrôle"/>
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="GetStarted.Description" DefaultValue="Your sample add-in loaded succesfully. Go to the HOME tab and click the 'Show Taskpane' button to get started."/>
-        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Click to Show a Taskpane"/>
+        <bt:String id="GetStarted.Description" DefaultValue="Votre Add-in a été chargé avec succès. Dans le panneau accueil, vous pouvez cliquer sur le bouton voir le panneau de contrôle."/>
+        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Cliquer pour voir le panneau de contrôle"/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>

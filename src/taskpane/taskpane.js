@@ -10,6 +10,7 @@ var BASE_ETAPES_NOM_TABLE = "baseEtapes";
 var BASE_PARENTS_NOM_TABLE = "baseParents";
 var SHEET_NAME_DONNEES_ENTREE = "Données_entrée";
 var SHEET_NAME_TABLE_CONFIG = "Configuration - Entrées Sorties";
+var TABLE_CONFIG_NOM = "tableConfig";
 
 Office.onReady((info) => {
   if (info.host === Office.HostType.Excel) {
@@ -145,13 +146,55 @@ async function deleteOldEtapes(tabNomWorksheet) {
 }
 
 async function EtapeUne(etape, nomFeuille) {
+  const NOM_DONNEES_ENTREE = "DONNEES_ENTREES";
   await Excel.run(async (context) => {
+    //nom de l'étape
+    const nomEtape = etape[1];
     //get worksheet
     const worksheet = context.workbook.worksheets.getItem(nomFeuille);
     //get données d'entrées
-    const donneesEntrees = worksheet.tables.getItem(SHEET_NAME_DONNEES_ENTREE);
+    const donneesEntrees = context.workbook.worksheets.getItem(SHEET_NAME_DONNEES_ENTREE);
+    //get table configuration
+    const worksheetTableConfig = context.workbook.worksheets.getItem(SHEET_NAME_TABLE_CONFIG);
+    // get tableau de données d'entrées dans la table de configuration
+    const tableConfig = worksheetTableConfig.tables.getItem(TABLE_CONFIG_NOM).getRange().getUsedRange();
+    //charger les values
+    tableConfig.load("values");
     await context.sync();
+    //on récupère les en-têtes de colonne
+    const headers = tableConfig.values[0];
+    //on filtre les indices des colonnes dont l'en-tête commence par NOM_DONNEES_ENTREE
+    const indices = headers
+      .map((header, index) => (header.startsWith(NOM_DONNEES_ENTREE) ? index : -1))
+      .filter((index) => index >= 0);
+    const colonnesDonnesEntrees = await obtenirColonnesParNomEnTete(nomFeuille, TABLE_CONFIG_NOM, NOM_DONNEES_ENTREE);
+    // eslint-disable-next-line prettier/prettier
+    const colonnesEtapeUneEntree = await obtenirColonnesParNomEnTete(nomFeuille, TABLE_CONFIG_NOM, nomEtape + "_Entrée");
+    
   });
+}
+
+async function obtenirColonnesParNomEnTete(nomFeuille, nomTableau, debutEnTete) {
+  const result = [];
+  await Excel.run(async (context) => {
+    const worksheet = context.workbook.worksheets.getItem(nomFeuille);
+    const table = worksheet.tables.getItem(nomTableau).getRange().getUsedRange();
+    table.load("values");
+    await context.sync();
+    const headers = table.values[0];
+    const indices = headers
+      .map((header, index) => (header.startsWith(debutEnTete) ? index : -1))
+      .filter((index) => index >= 0);
+    const columnsObjects = await Promise.all(
+      indices.map((index) => table.getColumn(index).getUsedRange().load("values"))
+    );
+    await context.sync();
+    const columns = columnsObjects.map((columnValues) => {
+      return columnValues.values;
+    });
+    result.push(...columns);
+  });
+  return result;
 }
 
 async function createTable() {
