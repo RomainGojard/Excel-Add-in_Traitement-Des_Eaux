@@ -27,12 +27,21 @@ export async function app() {
     try {
       await sortBDD();
       const BDD = await getBDD();
-      console.log(BDD);
       await context.sync();
       const baseEtapes = BDD[0];
       const baseParents = BDD[1];
       const worksheetsEtapes = await initSheets(baseEtapes);
-      await EtapeUne(baseEtapes[0], worksheetsEtapes[0]);
+      baseEtapes.forEach((etape) => {
+        if (etape[0] == 1) {
+          EtapeUne(etape, worksheetsEtapes[0]);
+        } else {
+          const idEtape = etape[0];
+          // obtenir les parents de l'étape en cours depuis la base parents
+          const parents = baseParents.filter((ligne) => ligne[1] == idEtape);
+          EtapeN(etape, worksheetsEtapes[idEtape - 1], parents, baseEtapes, worksheetsEtapes);
+        }
+      });
+      await context.sync();
       return context;
     } catch (error) {
       console.error(error);
@@ -67,7 +76,6 @@ async function initSheets(baseEtapes) {
         worksheetsEtapes.push(nomFeuille);
       }
       await context.sync();
-      console.log(worksheetsEtapes);
       deleteOldEtapes(worksheetsEtapes);
       resolve(worksheetsEtapes);
     }).catch((error) => reject(error));
@@ -154,21 +162,21 @@ async function EtapeUne(etape, nomFeuille) {
     const worksheet = context.workbook.worksheets.getItem(nomFeuille);
     //get données d'entrées
     const donneesEntrees = context.workbook.worksheets.getItem(SHEET_NAME_DONNEES_ENTREE);
-    //get table configuration
-    const worksheetTableConfig = context.workbook.worksheets.getItem(SHEET_NAME_TABLE_CONFIG);
-    // get tableau de données d'entrées dans la table de configuration
-    const tableConfig = worksheetTableConfig.tables.getItem(TABLE_CONFIG_NOM).getRange().getUsedRange();
     //charger les values
-    tableConfig.load("values");
     worksheet.load("values");
     donneesEntrees.load("values");
     await context.sync();
-    const colonnesDonnesEntrees = await obtenirColonnesParNomEnTete(nomFeuille, TABLE_CONFIG_NOM, NOM_DONNEES_ENTREE);
+    const colonnesDonnesEntrees = await obtenirColonnesParNomEnTete(
+      SHEET_NAME_TABLE_CONFIG,
+      TABLE_CONFIG_NOM,
+      NOM_DONNEES_ENTREE
+    );
     // eslint-disable-next-line prettier/prettier
-    const colonnesEtapeUneEntree = await obtenirColonnesParNomEnTete(nomFeuille, TABLE_CONFIG_NOM, nomEtape + "_Entrée");
+    const colonnesEtapeUneEntree = await obtenirColonnesParNomEnTete(SHEET_NAME_TABLE_CONFIG, TABLE_CONFIG_NOM, nomEtape + "_Entrée");
     //vérifier que les colonnes fdonnes entrees et colonnesEtapeUneEntree ont la même longueur
     if (colonnesDonnesEntrees[0].length !== colonnesEtapeUneEntree[0].length) {
-      throw new Error("Les colonnes données d'entrées et colonnesEtapeUneEntree n'ont pas la même longueur");
+      console.log(colonnesDonnesEntrees[0] + " vs " + colonnesEtapeUneEntree[0]);
+      throw new Error("Les colonnes données d'entrées et colonnesEtapeUneEntree n'ont pas la même longueur : \n");
     }
     // parcourir pour i allant de 1 à la longueur de la colonne des données d'entrées
     for (let i = 1; i < colonnesDonnesEntrees[0].length; i++) {
@@ -179,6 +187,50 @@ async function EtapeUne(etape, nomFeuille) {
         targetCell.values = [[`=${SHEET_NAME_DONNEES_ENTREE}!${colonnesDonnesEntrees[j][i][0]}`]];
       }
     }
+    await context.sync();
+  });
+}
+
+async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes, worksheetsEtapes) {
+  const NOM_DONNEES_ENTREE = "DONNEES_ENTREES";
+  await Excel.run(async (context) => {
+    //nom de l'étape
+    const nomEtapeTarget = etape[1];
+    //id de l'étape
+    const idEtape = etape[0];
+    //get worksheet
+    const worksheetTarget = context.workbook.worksheets.getItem(nomFeuilleTarget);
+    await context.sync();
+    // charger values de worksheetTarget
+    worksheetTarget.load("values");
+    await context.sync();
+    // pour chaque parent de l'étape, on met dans tabSources les colonnes de données de sorties
+    const tabSources = [];
+    parents.forEach(async (parent) => {
+      // obtenir le nomEtape du parent
+      const nomEtapeParent = baseEtapes.find((row) => row[0] === parent[0])[1];
+      //obtenir le nom du worksheet du parent
+      const nomWorksheetParent = nomEtapeParent + "|" + parent[0];
+      // on ajoute une dernière colonne qui contient le nom du worksheet du parent
+      tabSources.push(
+        await obtenirColonnesParNomEnTete(SHEET_NAME_TABLE_CONFIG, TABLE_CONFIG_NOM, nomEtapeParent + "_Sortie")
+      );
+    });
+    console.log("tabSources de l'étape " + idEtape + " : " + tabSources);
+    // eslint-disable-next-line prettier/prettier
+    const colonnesTarget = await obtenirColonnesParNomEnTete(SHEET_NAME_TABLE_CONFIG, TABLE_CONFIG_NOM, nomEtapeTarget + "_Entrée");
+    //vérifier que les colonnes fdonnes entrees et colonnesEtapeUneEntree ont la même longueur
+
+    /*// parcourir pour i allant de 1 à la longueur de la colonne des données d'entrées
+    for (let i = 1; i < colonnesDonnesEntrees[0].length; i++) {
+      // for de 0 à 3 pour les 4 colonnes de la table de configuration
+      for (let j = 0; j < 4; j++) {
+        const targetCell = worksheet.getRange(colonnesEtapeUneEntree[j][i][0]);
+        // mettre l'addresse contenu dans donnees d'entrées dans la cellule en cours
+        targetCell.values = [[`=${SHEET_NAME_DONNEES_ENTREE}!${colonnesDonnesEntrees[j][i][0]}`]];
+      }
+    }
+    */
     await context.sync();
   });
 }
