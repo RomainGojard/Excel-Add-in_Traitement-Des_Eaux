@@ -256,15 +256,16 @@ async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes) {
             break;
           }
           case "Concentration": {
-            targetCell.formulas = [[calculeCelluleConcentration(tabSources, j, i)]];
+            targetCell.formulas = [[calculeCelluleConcentration(tabSources, j, i, parents)]];
             break;
           }
           case "Température": {
-            targetCell.formulas = [[calculeCelluleTemperature(tabSources, j, i)]];
+            targetCell.formulas = [[calculeCelluleTemperature(tabSources, j, i, parents)]];
             break;
           }
           case "PH": {
-            targetCell.formulas = [[calculeCellulePH(tabSources, j, i)]];
+            console.log(calculeCellulePH(tabSources, j, i, parents));
+            targetCell.formulas = [[calculeCellulePH(tabSources, j, i, parents)]];
             break;
           }
         }
@@ -275,42 +276,41 @@ async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes) {
 }
 
 function calculeCelluleDebit(tabSources, j, i, parents) {
-  console.log(parents, j, i);
-  let result = "";
+  let result = "=";
   //boucle for sur les sources ou les parents
   for (let k = 0; k < parents.length; k++) {
-    result += `=('${tabSources[k].slice(-1)}'!${tabSources[k][j][i][0]}*${parents[k][2]}/100)+`;
+    result += `('${tabSources[k].slice(-1)}'!${tabSources[k][j][i][0]}*${parents[k][2]}/100)+`;
   }
   result = result.slice(0, -1);
   return result;
 }
 
-function calculeCelluleConcentration(tabSources, j, i) {
-  let result = "";
-  tabSources.forEach((source) => {
-    result += `='${source.slice(-1)}'!${source[j][i][0]}+`;
-  });
+function calculeCelluleConcentration(tabSources, j, i, parents) {
+  let result = "=(";
+  for (let k = 0; k < parents.length; k++) {
+    result += `('${tabSources[k].slice(-1)}'!${tabSources[k][j][1][0]}*'${tabSources[k].slice(-1)}'!${tabSources[k][j][i][0]}*${parents[k][2]}/100)+`;
+  }
   result = result.slice(0, -1);
+  result += ") / (";
+  for (let k = 0; k < parents.length; k++) {
+    result += `('${tabSources[k].slice(-1)}'!${tabSources[k][j][1][0]}*${parents[k][2]}/100)+`;
+  }
+  result = result.slice(0, -1);
+  result += ")";
   return result;
 }
 function calculeCelluleTemperature(tabSources, j, i, parents) {
-  console.log(parents, j, i);
-  let result = "";
+  let result = "=";
   //boucle for sur les sources ou les parents
   for (let k = 0; k < parents.length; k++) {
-    result += `=('${tabSources[k].slice(-1)}'!${tabSources[k][j][i][0]}*${parents[k][2]}/100)+`;
+    result += `('${tabSources[k].slice(-1)}'!${tabSources[k][j][i][0]}*${parents[k][2]}/100)+`;
   }
   result = result.slice(0, -1);
   return result;
 }
 
 function calculeCellulePH(tabSources, j, i, parents) {
-  console.log(parents, j, i);
-  if (parents.length === 1) {
-    return `=('${tabSources[0].slice(-1)}'!${tabSources[0][j][i][0]}`;
-  } else {
-    return "A REMPLIR";
-  }
+  return `='${tabSources[0].slice(-1)}'!${tabSources[0][j][i][0]}`;
 }
 
 async function obtenirColonnesParNomEnTete(nomFeuille, nomTableau, debutEnTete) {
