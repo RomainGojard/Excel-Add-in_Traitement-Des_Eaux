@@ -252,21 +252,15 @@ async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes) {
         const targetCell = worksheetTarget.getRange(colonnesTarget[j][i][0]);
         switch (colonneTypeChamp[0][i][0]) {
           case "Débit": {
-            const value = calculeCelluleDebit(tabSources, j, i);
-            console.log(value);
-            targetCell.values = [[calculeCelluleDebit(tabSources, j, i)]];
+            targetCell.formulas = [[calculeCelluleDebit(tabSources, j, i, parents)]];
             break;
           }
           case "Concentration": {
-            const value = calculeCelluleDebit(tabSources, j, i);
-            console.log(value);
-            targetCell.values = [[calculeCelluleConcentration(tabSources, j, i)]];
+            targetCell.formulas = [[calculeCelluleConcentration(tabSources, j, i)]];
             break;
           }
           case "Température": {
-            const value = calculeCelluleDebit(tabSources, j, i);
-            console.log(value);
-            targetCell.values = [[calculeCelluleTemperature(tabSources, j, i)]];
+            targetCell.formulas = [[calculeCelluleTemperature(tabSources, j, i)]];
             break;
           }
         }
@@ -276,25 +270,31 @@ async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes) {
   });
 }
 
-function calculeCelluleDebit(tabSources, j, i) {
-  let result = "=";
-  tabSources.forEach((source) => {
-    result += `+${source.slice(-1)}!${source[j][i][0]}`;
-  });
+function calculeCelluleDebit(tabSources, j, i, parents) {
+  console.log(parents, j, i);
+  let result = "";
+  //boucle for sur les sources ou les parents
+  for (let k = 0; k < parents.length; k++) {
+    result += `=('${tabSources[k].slice(-1)}'!${tabSources[k][j][i][0]}*${parents[k][2]}/100)+`;
+  }
+  result = result.slice(0, -1);
   return result;
 }
+
 function calculeCelluleConcentration(tabSources, j, i) {
-  let result = "=";
+  let result = "";
   tabSources.forEach((source) => {
-    result += `+${source.slice(-1)}!${source[j][i][0]}`;
+    result += `='${source.slice(-1)}'!${source[j][i][0]}+`;
   });
+  result = result.slice(0, -1);
   return result;
 }
 function calculeCelluleTemperature(tabSources, j, i) {
-  let result = "=";
+  let result = "";
   tabSources.forEach((source) => {
-    result += `+${source.slice(-1)}!${source[j][i][0]}`;
+    result += `='${source.slice(-1)}'!${source[j][i][0]}+`;
   });
+  result = result.slice(0, -1);
   return result;
 }
 
