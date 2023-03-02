@@ -263,6 +263,10 @@ async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes) {
             targetCell.formulas = [[calculeCelluleTemperature(tabSources, j, i)]];
             break;
           }
+          case "PH": {
+            targetCell.formulas = [[calculeCellulePH(tabSources, j, i)]];
+            break;
+          }
         }
       }
     }
@@ -289,13 +293,24 @@ function calculeCelluleConcentration(tabSources, j, i) {
   result = result.slice(0, -1);
   return result;
 }
-function calculeCelluleTemperature(tabSources, j, i) {
+function calculeCelluleTemperature(tabSources, j, i, parents) {
+  console.log(parents, j, i);
   let result = "";
-  tabSources.forEach((source) => {
-    result += `='${source.slice(-1)}'!${source[j][i][0]}+`;
-  });
+  //boucle for sur les sources ou les parents
+  for (let k = 0; k < parents.length; k++) {
+    result += `=('${tabSources[k].slice(-1)}'!${tabSources[k][j][i][0]}*${parents[k][2]}/100)+`;
+  }
   result = result.slice(0, -1);
   return result;
+}
+
+function calculeCellulePH(tabSources, j, i, parents) {
+  console.log(parents, j, i);
+  if (parents.length === 1) {
+    return `=('${tabSources[0].slice(-1)}'!${tabSources[0][j][i][0]}`;
+  } else {
+    return "A REMPLIR";
+  }
 }
 
 async function obtenirColonnesParNomEnTete(nomFeuille, nomTableau, debutEnTete) {
