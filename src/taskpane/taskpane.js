@@ -35,12 +35,10 @@ export async function app() {
         if (etape[0] == 1) {
           EtapeUne(etape, worksheetsEtapes[0]);
         } else {
-          if (etape[0] == 2) {
-            const idEtape = etape[0];
-            // obtenir les parents de l'étape en cours depuis la base parents
-            const parents = baseParents.filter((ligne) => ligne[1] == idEtape);
-            EtapeN(etape, worksheetsEtapes[idEtape - 1], parents, baseEtapes, worksheetsEtapes);
-          }
+          const idEtape = etape[0];
+          // obtenir les parents de l'étape en cours depuis la base parents
+          const parents = baseParents.filter((ligne) => ligne[1] == idEtape);
+          EtapeN(etape, worksheetsEtapes[idEtape - 1], parents, baseEtapes, worksheetsEtapes);
         }
       });
       await context.sync();
@@ -208,11 +206,6 @@ async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes) {
     await context.sync();
     // pour chaque parent de l'étape, on met dans tabSources les colonnes de données de sorties
     const tabSources = [];
-    // TEST get le tableau d'entrée dans le targetWorksheet
-    const tableauTarget = worksheetTarget.tables.getItem(nomEtapeTarget + "_Entree");
-    tableauTarget.load("values");
-    await context.sync();
-    console.log(tableauTarget.values);
     parents.forEach(async (parent) => {
       // obtenir le nomEtape du parent
       const nomEtapeParent = baseEtapes.find((row) => row[0] === parent[0])[1];
@@ -340,6 +333,35 @@ async function obtenirColonnesParNomEnTete(nomFeuille, nomTableau, debutEnTete) 
   return result;
 }
 
+async function getTableDataByPrefix(nomWorksheet, tablePrefix) {
+  try {
+    // Charger l'API Excel
+    await Excel.run(async (context) => {
+      const sheet = context.workbook.worksheets.getItem(nomWorksheet);
+      // Récupérer les tables dans le workbook
+      const tables = context.sheet.tables;
+      tables.load("items/name");
+      // Exécuter les requêtes
+      await context.sync();
+      // Trouver la première table dont le nom commence par la chaîne spécifiée
+      const table = tables.items.find((t) => t.name.startsWith(tablePrefix));
+      if (!table) {
+        console.error(`Table with prefix "${tablePrefix}" not found`);
+        return null;
+      }
+      // Récupérer les données du tableau
+      const range = table.getDataBodyRange();
+      range.load("values");
+      // Exécuter les requêtes
+      await context.sync();
+      // Retourner les données du tableau
+      return range.values;
+    });
+  } catch (error) {
+    console.error(error);
+  }
+}
+
 /** Default helper for invoking an action and handling errors. */
 async function tryCatch(callback) {
   try {
@@ -348,17 +370,6 @@ async function tryCatch(callback) {
     // Note: In a production add-in, you'd want to notify the user through your add-in's UI.
     console.error(error);
   }
-}
-
-async function filterTable() {
-  await Excel.run(async (context) => {
-    const currentWorksheet = context.workbook.worksheets.getActiveWorksheet();
-    const expensesTable = currentWorksheet.tables.getItem("ExpensesTable");
-    const categoryFilter = expensesTable.columns.getItem("Category").filter;
-    categoryFilter.applyValuesFilter(["Education", "Groceries"]);
-
-    await context.sync();
-  });
 }
 
 let dialog = null;
