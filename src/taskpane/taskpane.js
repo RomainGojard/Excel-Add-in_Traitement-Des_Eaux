@@ -208,6 +208,11 @@ async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes) {
     await context.sync();
     // pour chaque parent de l'étape, on met dans tabSources les colonnes de données de sorties
     const tabSources = [];
+    // TEST get le tableau d'entrée dans le targetWorksheet
+    const tableauTarget = worksheetTarget.tables.getItem(nomEtapeTarget + "_Entree");
+    tableauTarget.load("values");
+    await context.sync();
+    console.log(tableauTarget.values);
     parents.forEach(async (parent) => {
       // obtenir le nomEtape du parent
       const nomEtapeParent = baseEtapes.find((row) => row[0] === parent[0])[1];
@@ -264,7 +269,6 @@ async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes) {
             break;
           }
           case "PH": {
-            console.log(calculeCellulePH(tabSources, j, i, parents));
             targetCell.formulas = [[calculeCellulePH(tabSources, j, i, parents)]];
             break;
           }
@@ -361,7 +365,7 @@ let dialog = null;
 
 function openDialog() {
   Office.context.ui.displayDialogAsync(
-    "https://localhost:3000/popup.html",
+    "https://csb10032001a6800cf9.z6.web.core.windows.net/popup.html",
     { height: 45, width: 55 },
 
     function (result) {
