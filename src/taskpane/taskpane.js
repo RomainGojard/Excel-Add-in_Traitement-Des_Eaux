@@ -204,6 +204,7 @@ async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes) {
     // charger values de worksheetTarget
     worksheetTarget.load("values");
     await context.sync();
+    await getTableDataByPrefix(nomFeuilleTarget, nomEtapeTarget + "_Entree");
     // pour chaque parent de l'étape, on met dans tabSources les colonnes de données de sorties
     const tabSources = [];
     parents.forEach(async (parent) => {
@@ -338,8 +339,10 @@ async function getTableDataByPrefix(nomWorksheet, tablePrefix) {
     // Charger l'API Excel
     await Excel.run(async (context) => {
       const sheet = context.workbook.worksheets.getItem(nomWorksheet);
+      sheet.load("tables");
+      await context.sync();
       // Récupérer les tables dans le workbook
-      const tables = context.sheet.tables;
+      const tables = sheet.tables;
       tables.load("items/name");
       // Exécuter les requêtes
       await context.sync();
@@ -355,7 +358,7 @@ async function getTableDataByPrefix(nomWorksheet, tablePrefix) {
       // Exécuter les requêtes
       await context.sync();
       // Retourner les données du tableau
-      return range.values;
+      console.log(range.values);
     });
   } catch (error) {
     console.error(error);
