@@ -156,6 +156,7 @@ async function deleteOldEtapes(tabNomWorksheet) {
 }
 
 async function EtapeUne(etape, nomFeuille) {
+  console.log("CGVUBHIUONUGCFXGCYGVUBHIJNOK");
   const NOM_DONNEES_ENTREE = "DONNEES_ENTREES";
   await Excel.run(async (context) => {
     //nom de l'étape
@@ -381,7 +382,7 @@ let dialog = null;
 
 function openDialog() {
   Office.context.ui.displayDialogAsync(
-    "https://csb10032001a6800cf9.z6.web.core.windows.net/popup.html",
+    "https://localhost:3000/", //"https://csb10032001a6800cf9.z6.web.core.windows.net/popup.html",
     { height: 45, width: 55 },
 
     function (result) {
