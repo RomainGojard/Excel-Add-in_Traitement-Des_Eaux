@@ -156,7 +156,6 @@ async function deleteOldEtapes(tabNomWorksheet) {
 }
 
 async function EtapeUne(etape, nomFeuille) {
-  console.log("CGVUBHIUONUGCFXGCYGVUBHIJNOK");
   const NOM_DONNEES_ENTREE = "DONNEES_ENTREES";
   await Excel.run(async (context) => {
     //nom de l'étape
@@ -207,7 +206,6 @@ async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes) {
     // charger values de worksheetTarget
     worksheetTarget.load("values");
     await context.sync();
-    await getTableDataByPrefix(nomFeuilleTarget, nomEtapeTarget + "_Entree");
     // pour chaque parent de l'étape, on met dans tabSources les colonnes de données de sorties
     const tabSources = [];
     parents.forEach(async (parent) => {
@@ -215,19 +213,10 @@ async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes) {
       const nomEtapeParent = baseEtapes.find((row) => row[0] === parent[0])[1];
       //obtenir le nom du worksheet du parent
       const nomWorksheetParent = nomEtapeParent + "|" + parent[0];
-      const result = await obtenirColonnesParNomEnTete(
-        SHEET_NAME_TABLE_CONFIG,
-        TABLE_CONFIG_NOM,
-        nomEtapeParent + "_Sortie"
-      );
-      result.push(nomWorksheetParent);
+      const result = await getTableAddressesByPrefix(nomWorksheetParent, nomEtapeParent + "_Sortie");
       tabSources.push(result);
     });
-    const colonnesTarget = await obtenirColonnesParNomEnTete(
-      SHEET_NAME_TABLE_CONFIG,
-      TABLE_CONFIG_NOM,
-      nomEtapeTarget + "_Entrée"
-    );
+    const colonnesTarget = await getTableAddressesByPrefix(nomFeuilleTarget, nomEtapeTarget + "_Entree");
     const colonneTypeChamp = await obtenirColonnesParNomEnTete(
       SHEET_NAME_TABLE_CONFIG,
       TABLE_CONFIG_NOM,
@@ -235,38 +224,32 @@ async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes) {
     );
 
     //vérifier que les colonnes target colonnes de tabSources et type champ ont la même longueur
-    if (
-      colonnesTarget[0].length !== tabSources[0][0].length &&
-      colonnesTarget[0].length !== colonneTypeChamp[0].length &&
-      colonneTypeChamp[0].length !== tabSources[0][0].length
-    ) {
+    if (!(colonnesTarget.length == tabSources[0].length && colonnesTarget.length == colonneTypeChamp[0].length)) {
       console.log(colonnesTarget[0] + " vs " + tabSources[0][0]);
       throw new Error("Les colonnes target et colonnes de tabSources n'ont pas la même longueur : \n");
     }
-    console.log(tabSources);
-    console.log(colonnesTarget);
-    console.log(colonneTypeChamp[0]);
 
     //parcourir pour i allant de 1 à la longueur de la colonne de target
-    for (let i = 1; i < colonnesTarget[0].length; i++) {
+    for (let i = 1; i < colonnesTarget.length; i++) {
       // for de 0 à 3 pour les 4 colonnes de la table de configuration
       for (let j = 0; j < 4; j++) {
-        const targetCell = worksheetTarget.getRange(colonnesTarget[j][i][0]);
+        const parts = colonnesTarget[i][j].split("!");
+        const targetCell = worksheetTarget.getRange(parts[1]);
         switch (colonneTypeChamp[0][i][0]) {
           case "Débit": {
-            targetCell.formulas = [[calculeCelluleDebit(tabSources, j, i, parents)]];
+            targetCell.formulas = [[calculeCelluleDebit(tabSources, i, j, parents)]];
             break;
           }
           case "Concentration": {
-            targetCell.formulas = [[calculeCelluleConcentration(tabSources, j, i, parents)]];
+            targetCell.formulas = [[calculeCelluleConcentration(tabSources, i, j, parents)]];
             break;
           }
           case "Température": {
-            targetCell.formulas = [[calculeCelluleTemperature(tabSources, j, i, parents)]];
+            targetCell.formulas = [[calculeCelluleTemperature(tabSources, i, j, parents)]];
             break;
           }
           case "PH": {
-            targetCell.formulas = [[calculeCellulePH(tabSources, j, i, parents)]];
+            targetCell.formulas = [[calculeCellulePH(tabSources, i, j, parents)]];
             break;
           }
         }
@@ -276,42 +259,42 @@ async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes) {
   });
 }
 
-function calculeCelluleDebit(tabSources, j, i, parents) {
+function calculeCelluleDebit(tabSources, i, j, parents) {
   let result = "=";
   //boucle for sur les sources ou les parents
   for (let k = 0; k < parents.length; k++) {
-    result += `('${tabSources[k].slice(-1)}'!${tabSources[k][j][i][0]}*${parents[k][2]}/100)+`;
+    result += `(${tabSources[k][i][j]}*${parents[k][2]}/100)+`;
   }
   result = result.slice(0, -1);
   return result;
 }
 
-function calculeCelluleConcentration(tabSources, j, i, parents) {
+function calculeCelluleConcentration(tabSources, i, j, parents) {
   let result = "=(";
   for (let k = 0; k < parents.length; k++) {
-    result += `('${tabSources[k].slice(-1)}'!${tabSources[k][j][1][0]}*'${tabSources[k].slice(-1)}'!${tabSources[k][j][i][0]}*${parents[k][2]}/100)+`;
+    result += `(${tabSources[k][i][0]}*${tabSources[k][i][j]}*${parents[k][2]}/100)+`;
   }
   result = result.slice(0, -1);
   result += ") / (";
   for (let k = 0; k < parents.length; k++) {
-    result += `('${tabSources[k].slice(-1)}'!${tabSources[k][j][1][0]}*${parents[k][2]}/100)+`;
+    result += `(${tabSources[k][i][0]}*${parents[k][2]}/100)+`;
   }
   result = result.slice(0, -1);
   result += ")";
   return result;
 }
-function calculeCelluleTemperature(tabSources, j, i, parents) {
+function calculeCelluleTemperature(tabSources, i, j, parents) {
   let result = "=";
   //boucle for sur les sources ou les parents
   for (let k = 0; k < parents.length; k++) {
-    result += `('${tabSources[k].slice(-1)}'!${tabSources[k][j][i][0]}*${parents[k][2]}/100)+`;
+    result += `(${tabSources[k][i][j]}*${parents[k][2]}/100)+`;
   }
   result = result.slice(0, -1);
   return result;
 }
 
-function calculeCellulePH(tabSources, j, i, parents) {
-  return `='${tabSources[0].slice(-1)}'!${tabSources[0][j][i][0]}`;
+function calculeCellulePH(tabSources, i, j, parents) {
+  return `=${tabSources[0][i][j]}`;
 }
 
 async function obtenirColonnesParNomEnTete(nomFeuille, nomTableau, debutEnTete) {
@@ -337,9 +320,10 @@ async function obtenirColonnesParNomEnTete(nomFeuille, nomTableau, debutEnTete) 
   return result;
 }
 
-async function getTableDataByPrefix(nomWorksheet, tablePrefix) {
+async function getTableAddressesByPrefix(nomWorksheet, tablePrefix) {
   try {
     // Charger l'API Excel
+    const addresses = [];
     await Excel.run(async (context) => {
       const sheet = context.workbook.worksheets.getItem(nomWorksheet);
       sheet.load("tables");
@@ -355,16 +339,30 @@ async function getTableDataByPrefix(nomWorksheet, tablePrefix) {
         console.error(`Table with prefix "${tablePrefix}" not found`);
         return null;
       }
-      // Récupérer les données du tableau
+      // Récupérer les adresses de chaque cellule de la plage de données
       const range = table.getDataBodyRange();
-      range.load("values");
-      // Exécuter les requêtes
+      range.load("address");
+      range.load("values/length");
       await context.sync();
-      // Retourner les données du tableau
-      console.log(range.values);
+      // Stocker les adresses dans un tableau
+      const rowCount = range.values.length;
+      const colCount = range.values[0].length;
+      for (let row = 0; row < rowCount; row++) {
+        const rowAdresses = [];
+        for (let col = 0; col < colCount; col++) {
+          const cell = range.getCell(row, col);
+          cell.load("address");
+          await context.sync();
+          rowAdresses.push(cell.address);
+        }
+        addresses.push(rowAdresses);
+      }
     });
+    // Retourner le tableau d'adresses
+    return addresses;
   } catch (error) {
     console.error(error);
+    return null;
   }
 }
 
@@ -382,7 +380,7 @@ let dialog = null;
 
 function openDialog() {
   Office.context.ui.displayDialogAsync(
-    "https://localhost:3000/", //"https://csb10032001a6800cf9.z6.web.core.windows.net/popup.html",
+    "https://localhost:3000/popup.html", //"https://csb10032001a6800cf9.z6.web.core.windows.net/popup.html",
     { height: 45, width: 55 },
 
     function (result) {
