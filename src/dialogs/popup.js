@@ -5,30 +5,52 @@
 
 /* global console, document, Excel, Office */
 
-Office.onReady((info) => {
-  document.getElementById("ok-button").onclick = () => tryCatch(sendStringToParentPage);
+Office.onReady(() => {
+  $("#my-form").submit((event) => {
+    event.preventDefault();
+    const id_etape = $("#id_etape").val();
+    const typeEtape = $("#typeEtape").val();
+    Office.context.ui.messageParent(JSON.stringify({ id_etape, typeEtape }));
+  });
+
+  $("#cancel-form").click(() => {
+    Office.context.ui.messageParent("cancel");
+  });
 });
 
-function sendStringToParentPage() {
-  const userName = Document.getElementById("name-box").value;
-  Office.context.ui.messageParent(userName);
+var sheet = null;
+
+Office.onReady(async () => {
+  await Excel.run(async (context) => {
+    sheet = context.workbook.worksheets.getItem("_BDD");
+    const baseEtapes = sheet.tables.getItem("baseEtapes");
+    const range = baseEtapes.getDataBodyRange();
+    range.load("values");
+    await context.sync();
+    const data = range.values;
+    remplirFormulaire(data);
+  });
+});
+
+async function initForm() {
+  await Excel.run(async (context) => {
+    sheet = context.workbook.worksheets.getItem("_BDD");
+    await context.sync();
+    const baseEtapes = sheet.tables.getItem("baseEtapes");
+    await context.sync();
+    const range = baseEtapes.getDataBodyRange();
+    range.load("values");
+    await context.sync();
+    console.log("Données de la table chargées !");
+    console.log(range.values);
+    remplirFormulaire(range.values);
+    await context.sync();
+  });
 }
 
-/** Default helper for invoking an action and handling errors. */
-async function tryCatch(callback) {
-  try {
-    await callback();
-  } catch (error) {
-    // Note: In a production add-in, you'd want to notify the user through your add-in's UI.
-    Console.error(error);
-  }
-}
-
-function getSheetNames() {
-  const sheets = Excel.Sheets;
-  const sheetNames = [];
-  for (let i = 0; i < sheets.count; i++) {
-    sheetNames.push(sheets.getItemAt(i).name);
-  }
-  return sheetNames;
+function remplirFormulaire(data) {
+  var id = data.length + 1;
+  document.getElementById("id").value = id;
+  var etape = data[0][1];
+  document.getElementById("etape").value = etape;
 }

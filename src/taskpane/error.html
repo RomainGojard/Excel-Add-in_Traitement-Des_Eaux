@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>L'application a rencontré une erreur</title>
+  </head>
+  <body>
+    <h1>L'application a rencontré une erreur</h1>
+
+    
+    <p id="erreur"></p>
+
+    <script> 
+      // affichage de l'erreur contenue dans l'url
+      var erreur = window.location.search.substring(1);
+      // remplacer les caractères
+      erreur = erreur.replace(/%C3%A9/g, "é");
+      erreur = erreur.replace(/%C3%A8/g, "è");
+      erreur = erreur.replace(/%C3%A0/g, "à");
+      erreur = erreur.replace(/%C3%A7/g, "ç");
+      erreur = erreur.replace(/%C3%AA/g, "ê");
+      erreur = erreur.replace(/%C3%AB/g, "ë");
+      erreur = erreur.replace(/%C3%AE/g, "î");
+      erreur = erreur.replace(/%C3%AF/g, "ï");
+      erreur = erreur.replace(/%C3%B4/g, "ô");
+      erreur = erreur.replace(/%20/g, " ");
+      // remplcer les guillemets
+      erreur = erreur.replace(/%22/g, '"');
+      erreur = erreur.replace(/%27/g, "'");
+      // remplacer les caractères spéciaux
+      erreur = erreur.replace(/%3C/g, "<");
+      erreur = erreur.replace(/%3E/g, ">");
+      erreur = erreur.replace(/%3D/g, "=");
+      erreur = erreur.replace(/%2F/g, "/");
+      erreur = erreur.replace(/%3A/g, ":");
+      erreur = erreur.replace(/%3B/g, ";");
+      erreur = erreur.replace(/%3F/g, "?");
+      erreur = erreur.replace(/%40/g, "@");
+      erreur = erreur.replace(/%26/g, "&");
+      erreur = erreur.replace(/%23/g, "#");
+      erreur = erreur.replace(/%24/g, "$");
+      erreur = erreur.replace(/%25/g, "%");
+      // les %20
+      erreur = erreur.replace(/%20/g, " ");
+
+      document.getElementById("erreur").innerHTML = erreur;
+      </script>
+
+    <p>
+      L'application a rencontré une erreur. Vous pouvez fermer cette fenêtre et
+      continuer à travailler.
+    </p>
+    <p>
+      Si vous souhaitez signaler cette erreur, veuillez copier le texte ci-dessus
+      et le coller dans un message à l'adresse suivante :
+      <a href="mailto:rgojard@ivactis.com">
+    </p>
+  </body>
+</html>

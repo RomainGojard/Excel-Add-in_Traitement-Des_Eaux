@@ -5,8 +5,6 @@
 
 /* global console, document, Excel, Office */
 
-//test
-
 var SHEET_NAME_BDD = "_BDD";
 var BASE_ETAPES_NOM_TABLE = "baseEtapes";
 var BASE_PARENTS_NOM_TABLE = "baseParents";
@@ -19,15 +17,16 @@ Office.onReady((info) => {
     document.getElementById("sideload-msg").style.display = "none";
     document.getElementById("app-body").style.display = "flex";
 
-    document.getElementById("open-dialog").onclick = openDialog;
+    //document.getElementById("open-dialog").onclick = openDialog;
     document.getElementById("app").addEventListener("click", app);
   }
 });
 
-export async function app() {
+async function app() {
   Excel.run(async (context) => {
     try {
       await sortBDD();
+      //si une erreur est survenue dans getBDD, on affiche le message d'erreur et on arrête le script
       const BDD = await getBDD();
       await context.sync();
       const baseEtapes = BDD[0];
@@ -46,6 +45,8 @@ export async function app() {
       await context.sync();
       return context;
     } catch (error) {
+      // afficher le message d'erreur dans une popup
+      errorPopUp(error);
       console.error(error);
       return context.sync();
     }
@@ -97,8 +98,58 @@ async function getBDD() {
       //enlevr la première ligne qui contient les noms des colonnes
       baseEtapes.values.shift();
       baseParents.values.shift();
+      // si une erreur est renvoyée dans checkBDD, on arrête le processus
+      checkBDD(baseEtapes.values, baseParents.values);
       resolve([baseEtapes.values, baseParents.values]);
-    }).catch((error) => reject(error));
+    });
+  });
+}
+
+function checkBDD(baseEtapes, baseParents) {
+  if (baseEtapes.length == 0) {
+    throw new Error("La base d'étapes est vide");
+  }
+  if (baseParents.length == 0) {
+    throw new Error("La base de parents est vide");
+  }
+
+  //check que pour chaque ligne, toutes les colonnes sont remplies
+  baseEtapes.forEach((etape) => {
+    etape.forEach((colonne) => {
+      if (colonne == null || colonne == "") {
+        throw new Error("Une ligne de la base d'étapes est incomplète");
+      }
+    });
+  });
+  baseParents.forEach((parent) => {
+    parent.forEach((colonne) => {
+      if (colonne == null || colonne == "") {
+        throw new Error("Une ligne de la base de parents est incomplète");
+      }
+    });
+  });
+
+  // check que id_etapes est unique
+  const idEtapes = baseEtapes.map((etape) => etape[0]);
+  const idEtapesUnique = [...new Set(idEtapes)];
+  if (idEtapes.length != idEtapesUnique.length) {
+    throw new Error("Les id des étapes ne sont pas uniques");
+  }
+  // check que le doublet (id_etape_parent, id_etape_enfant) est unique
+  const idEtapesParents = baseParents.map((parent) => parent[0]);
+  const idEtapesEnfants = baseParents.map((parent) => parent[1]);
+  const idEtapesParentsEnfants = idEtapesParents.map((id, index) => [id, idEtapesEnfants[index]]);
+  const idEtapesParentsEnfantsUnique = [...new Set(idEtapesParentsEnfants.map((id) => id.join()))];
+  if (idEtapesParentsEnfants.length != idEtapesParentsEnfantsUnique.length) {
+    throw new Error("Les id des parents et enfants ne sont pas uniques");
+  }
+  // check que la somme des flux (parent[2]) pour le même id_etape_parent est égale à 100
+  const idEtapesParentsUnique = [...new Set(idEtapesParents)];
+  idEtapesParentsUnique.forEach((id) => {
+    const flux = baseParents.filter((parent) => parent[0] == id).reduce((acc, curr) => acc + curr[2], 0);
+    if (flux != 100) {
+      throw new Error(`La somme des flux pour l'étape ${id} est différente de 100`);
+    }
   });
 }
 
@@ -378,16 +429,28 @@ async function tryCatch(callback) {
 
 let dialog = null;
 
-function openDialog() {
+function errorPopUp(error) {
   Office.context.ui.displayDialogAsync(
-    "https://localhost:3000/popup.html", //"https://csb10032001a6800cf9.z6.web.core.windows.net/popup.html",
+    window.location.origin + "/error.html?erreur=" + error,
     { height: 45, width: 55 },
-
-    function (result) {
-      dialog = result.value;
-      dialog.addEventHandler(Office.EventType.DialogMessageReceived, processMessage);
+    (result) => {
+      const dialog = result.value;
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (arg) => {
+        const data = JSON.parse(arg.message);
+        dialog.close();
+      });
     }
   );
+}
+
+function openDialog() {
+  Office.context.ui.displayDialogAsync(window.location.origin + "/popup.html", { height: 45, width: 55 }, (result) => {
+    const dialog = result.value;
+    dialog.addEventHandler(Office.EventType.DialogMessageReceived, (arg) => {
+      const data = JSON.parse(arg.message);
+      dialog.close();
+    });
+  });
 }
 
 function processMessage(arg) {
