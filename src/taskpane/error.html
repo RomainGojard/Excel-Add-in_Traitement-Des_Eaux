@@ -45,17 +45,13 @@
       // les %20
       erreur = erreur.replace(/%20/g, " ");
 
+      // enlever le reste de l'url, ce qui est après un &
+      var pos = erreur.indexOf("&");
+      if (pos > 0) {
+        erreur = erreur.substring(0, pos);
+      }
+
       document.getElementById("erreur").innerHTML = erreur;
       </script>
-
-    <p>
-      L'application a rencontré une erreur. Vous pouvez fermer cette fenêtre et
-      continuer à travailler.
-    </p>
-    <p>
-      Si vous souhaitez signaler cette erreur, veuillez copier le texte ci-dessus
-      et le coller dans un message à l'adresse suivante :
-      <a href="mailto:rgojard@ivactis.com">
-    </p>
   </body>
 </html>

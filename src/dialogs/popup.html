@@ -8,13 +8,49 @@
     <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js" type="text/javascript"></script>
   </head>
   <body>
-    <form id="my-form">
-      <label for="id_etape">ID :</label>
-      <input type="text" id="id_etape" name="id_etape" /><br />
-      <label for="typeEtape">Type d'étape :</label>
-      <input type="text" id="typeEtape" name="typeEtape" /><br />
-      <button type="submit" id="submit-form">Submit</button>
-      <button type="button" id="cancel-form">Cancel</button>
-    </form>
+  
+    <p id="message"></p>
+
+    <script> 
+      // affichage du message contenu dans l'url
+      var message = window.location.search.substring(1);
+      // remplacer les caractères
+      message = message.replace(/%C3%A9/g, "é");
+      message = message.replace(/%C3%A8/g, "è");
+      message = message.replace(/%C3%A0/g, "à");
+      message = message.replace(/%C3%A7/g, "ç");
+      message = message.replace(/%C3%AA/g, "ê");
+      message = message.replace(/%C3%AB/g, "ë");
+      message = message.replace(/%C3%AE/g, "î");
+      message = message.replace(/%C3%AF/g, "ï");
+      message = message.replace(/%C3%B4/g, "ô");
+      message = message.replace(/%20/g, " ");
+      // remplcer les guillemets
+      message = message.replace(/%22/g, '"');
+      message = message.replace(/%27/g, "'");
+      // remplacer les caractères spéciaux
+      message = message.replace(/%3C/g, "<");
+      message = message.replace(/%3E/g, ">");
+      message = message.replace(/%3D/g, "=");
+      message = message.replace(/%2F/g, "/");
+      message = message.replace(/%3A/g, ":");
+      message = message.replace(/%3B/g, ";");
+      message = message.replace(/%3F/g, "?");
+      message = message.replace(/%40/g, "@");
+      message = message.replace(/%26/g, "&");
+      message = message.replace(/%23/g, "#");
+      message = message.replace(/%24/g, "$");
+      message = message.replace(/%25/g, "%");
+      // les %20
+      message = message.replace(/%20/g, " ");
+
+      // enlever le reste de l'url, ce qui est après un &
+      var pos = message.indexOf("&");
+      if (pos > 0) {
+        message = message.substring(0, pos);
+      }
+
+      document.getElementById("message").innerHTML = message;
+      </script>
   </body>
 </html>

@@ -26,7 +26,6 @@ async function app() {
   Excel.run(async (context) => {
     try {
       await sortBDD();
-      //si une erreur est survenue dans getBDD, on affiche le message d'erreur et on arrête le script
       const BDD = await getBDD();
       await context.sync();
       const baseEtapes = BDD[0];
@@ -34,15 +33,16 @@ async function app() {
       const worksheetsEtapes = await initSheets(baseEtapes);
       baseEtapes.forEach(async (etape) => {
         if (etape[0] == 1) {
-          EtapeUne(etape, worksheetsEtapes[0]);
+          await EtapeUne(etape, worksheetsEtapes[0]);
         } else {
           const idEtape = etape[0];
           // obtenir les parents de l'étape en cours depuis la base parents
           const parents = baseParents.filter((ligne) => ligne[1] == idEtape);
-          EtapeN(etape, worksheetsEtapes[idEtape - 1], parents, baseEtapes, worksheetsEtapes);
+          await EtapeN(etape, worksheetsEtapes[idEtape - 1], parents, baseEtapes, worksheetsEtapes);
         }
       });
       await context.sync();
+      openDialog("Le processus a fonctionné avec succès !");
       return context;
     } catch (error) {
       // afficher le message d'erreur dans une popup
@@ -101,7 +101,7 @@ async function getBDD() {
       // si une erreur est renvoyée dans checkBDD, on arrête le processus
       checkBDD(baseEtapes.values, baseParents.values);
       resolve([baseEtapes.values, baseParents.values]);
-    });
+    }).catch((error) => reject(error));
   });
 }
 
@@ -208,7 +208,8 @@ async function deleteOldEtapes(tabNomWorksheet) {
 
 async function EtapeUne(etape, nomFeuille) {
   const NOM_DONNEES_ENTREE = "DONNEES_ENTREES";
-  await Excel.run(async (context) => {
+
+  return Excel.run(async (context) => {
     //nom de l'étape
     const nomEtape = etape[1];
     //get worksheet
@@ -224,10 +225,10 @@ async function EtapeUne(etape, nomFeuille) {
       TABLE_CONFIG_NOM,
       NOM_DONNEES_ENTREE
     );
-    // eslint-disable-next-line prettier/prettier
-    const colonnesEtapeUneEntree = await obtenirColonnesParNomEnTete(SHEET_NAME_TABLE_CONFIG, TABLE_CONFIG_NOM, nomEtape + "_Entrée");
+    //const colonnesEtapeUneEntree = await obtenirColonnesParNomEnTete(SHEET_NAME_TABLE_CONFIG, TABLE_CONFIG_NOM, nomEtape + "_Entrée");
+    const colonnesEtapeUneEntree = await getTableAddressesByPrefix(nomFeuille, nomEtape + "_Entree");
     //vérifier que les colonnes fdonnes entrees et colonnesEtapeUneEntree ont la même longueur
-    if (colonnesDonnesEntrees[0].length !== colonnesEtapeUneEntree[0].length) {
+    if (colonnesDonnesEntrees[0].length !== colonnesEtapeUneEntree.length) {
       console.log(colonnesDonnesEntrees[0] + " vs " + colonnesEtapeUneEntree[0]);
       throw new Error("Les colonnes données d'entrées et colonnesEtapeUneEntree n'ont pas la même longueur : \n");
     }
@@ -235,9 +236,12 @@ async function EtapeUne(etape, nomFeuille) {
     for (let i = 1; i < colonnesDonnesEntrees[0].length; i++) {
       // for de 0 à 3 pour les 4 colonnes de la table de configuration
       for (let j = 0; j < 4; j++) {
-        const targetCell = worksheet.getRange(colonnesEtapeUneEntree[j][i][0]);
-        // mettre l'addresse contenu dans donnees d'entrées dans la cellule en cours
-        targetCell.values = [[`=${SHEET_NAME_DONNEES_ENTREE}!${colonnesDonnesEntrees[j][i][0]}`]];
+        if (colonnesDonnesEntrees[j][i][0] !== "") {
+          const parts = colonnesEtapeUneEntree[i][j].split("!");
+          const targetCell = worksheet.getRange(parts[1]);
+          // mettre l'addresse contenu dans donnees d'entrées dans la cellule en cours
+          targetCell.values = [[`=${SHEET_NAME_DONNEES_ENTREE}!${colonnesDonnesEntrees[j][i][0]}`]];
+        }
       }
     }
     await context.sync();
@@ -432,7 +436,7 @@ let dialog = null;
 function errorPopUp(error) {
   Office.context.ui.displayDialogAsync(
     window.location.origin + "/error.html?erreur=" + error,
-    { height: 45, width: 55 },
+    { height: 25, width: 35 },
     (result) => {
       const dialog = result.value;
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (arg) => {
@@ -443,14 +447,18 @@ function errorPopUp(error) {
   );
 }
 
-function openDialog() {
-  Office.context.ui.displayDialogAsync(window.location.origin + "/popup.html", { height: 45, width: 55 }, (result) => {
-    const dialog = result.value;
-    dialog.addEventHandler(Office.EventType.DialogMessageReceived, (arg) => {
-      const data = JSON.parse(arg.message);
-      dialog.close();
-    });
-  });
+function openDialog(message) {
+  Office.context.ui.displayDialogAsync(
+    window.location.origin + "/popup.html?message=" + message,
+    { height: 25, width: 35 },
+    (result) => {
+      const dialog = result.value;
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (arg) => {
+        const data = JSON.parse(arg.message);
+        dialog.close();
+      });
+    }
+  );
 }
 
 function processMessage(arg) {
