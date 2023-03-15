@@ -444,16 +444,6 @@ async function getTableAddressesByPrefix(nomWorksheet, tablePrefix) {
   }
 }
 
-/** Default helper for invoking an action and handling errors. */
-async function tryCatch(callback) {
-  try {
-    await callback();
-  } catch (error) {
-    // Note: In a production add-in, you'd want to notify the user through your add-in's UI.
-    console.error(error);
-  }
-}
-
 let dialog = null;
 
 function errorPopUp(error) {
@@ -482,9 +472,4 @@ function openDialog(message) {
       });
     }
   );
-}
-
-function processMessage(arg) {
-  document.getElementById("user-name").innerHTML = arg.message;
-  dialog.close();
 }
