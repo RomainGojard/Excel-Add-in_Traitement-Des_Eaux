@@ -151,6 +151,24 @@ function checkBDD(baseEtapes, baseParents) {
       throw new Error(`La somme des flux pour l'étape ${id} est différente de 100`);
     }
   });
+  // check qu'il y a au moins une étape associée à chaque id_etape_parent et id_etape_enfant
+  idEtapesParentsEnfants.forEach((row) => {
+    const idParent = row[0];
+    const idEnfant = row[1];
+    if (!idEtapes.includes(idParent)) {
+      throw new Error(`L'étape ${idParent} n'existe pas`);
+    }
+    if (!idEtapes.includes(idEnfant)) {
+      throw new Error(`L'étape ${idEnfant} n'existe pas`);
+    }
+  });
+
+  // check que chaque id_etape apparaît dans la base de parents
+  idEtapes.forEach((id) => {
+    if (!idEtapesParents.includes(id) && !idEtapesEnfants.includes(id)) {
+      throw new Error(`L'étape ${id} n'est pas associée à d'autres étapes`);
+    }
+  });
 }
 
 async function worksheetExists(worksheetName) {
@@ -339,12 +357,17 @@ function calculeCelluleConcentration(tabSources, i, j, parents) {
   return result;
 }
 function calculeCelluleTemperature(tabSources, i, j, parents) {
-  let result = "=";
-  //boucle for sur les sources ou les parents
+  let result = "=(";
   for (let k = 0; k < parents.length; k++) {
-    result += `(${tabSources[k][i][j]}*${parents[k][2]}/100)+`;
+    result += `(${tabSources[k][i][0]}*${tabSources[k][i][j]}*${parents[k][2]}/100)+`;
   }
   result = result.slice(0, -1);
+  result += ") / (";
+  for (let k = 0; k < parents.length; k++) {
+    result += `(${tabSources[k][i][0]}*${parents[k][2]}/100)+`;
+  }
+  result = result.slice(0, -1);
+  result += ")";
   return result;
 }
 
