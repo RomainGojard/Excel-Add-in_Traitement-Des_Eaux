@@ -22,6 +22,9 @@ Office.onReady((info) => {
   }
 });
 
+/**
+ * Application principale qui est appelée lorsqu'on clique sur le bouton "Lancer le processus". Envoie une erreur si le processus ne fonctionne pas
+ */
 async function app() {
   Excel.run(async (context) => {
     try {
@@ -54,6 +57,11 @@ async function app() {
   });
 }
 
+/**
+ * focntion qui initialise les feuilles d'étapes
+ * @param {string[]} baseEtapes base d'étapes
+ * @returns {Promise} une promesse qui renvoie un tableau contenant les noms des feuilles d'étapes
+ */
 async function initSheets(baseEtapes) {
   return new Promise((resolve, reject) => {
     Excel.run(async (context) => {
@@ -86,6 +94,10 @@ async function initSheets(baseEtapes) {
   });
 }
 
+/**
+ * fonction qui rennvoie la base de données
+ * @returns {Promise} une promesse qui renvoie la base de données
+ */
 async function getBDD() {
   return new Promise((resolve, reject) => {
     Excel.run(async (context) => {
@@ -106,6 +118,11 @@ async function getBDD() {
   });
 }
 
+/**
+ * fonction qui vérifie que la base de données est correcte, renvoie une erreur sinon
+ * @param {string[][]} baseEtapes base d'étapes
+ * @param {*} baseParents base de parents
+ */
 function checkBDD(baseEtapes, baseParents) {
   if (baseEtapes.length == 0) {
     throw new Error("La base d'étapes est vide");
@@ -172,6 +189,11 @@ function checkBDD(baseEtapes, baseParents) {
   });
 }
 
+/**
+ * Fonction qui renvoie un booléen indiquant si la feuille de nom worksheetName existe
+ * @param {string} worksheetName nom de la feuille à vérifier
+ * @returns {boolean} true si la feuille existe, false sinon
+ */
 async function worksheetExists(worksheetName) {
   return new Promise((resolve, reject) => {
     Excel.run(async (context) => {
@@ -183,6 +205,9 @@ async function worksheetExists(worksheetName) {
   });
 }
 
+/**
+ * Fonction qui trie les tables de la base de données par ordre croissant de id_etapes et id_etape_parent
+ */
 async function sortBDD() {
   await Excel.run(async (context) => {
     const sheetBDD = context.workbook.worksheets.getItem(SHEET_NAME_BDD);
@@ -208,6 +233,10 @@ async function sortBDD() {
   });
 }
 
+/**
+ * Fonction qui supprime les worksheets qui ne vont pas être utilisés
+ * @param {string} tabNomWorksheet tableau des noms des worksheets qui vont être utilisés
+ */
 async function deleteOldEtapes(tabNomWorksheet) {
   await Excel.run(async (context) => {
     // Récupération de tous les worksheets du classeur
@@ -225,6 +254,11 @@ async function deleteOldEtapes(tabNomWorksheet) {
   });
 }
 
+/**
+ * génère les formules pour la première étape selon les données d'entrées
+ * @param {string[]} etape ligne de la base d'étapes
+ * @param {string} nomFeuille nom de la feuille cible
+ */
 async function EtapeUne(etape, nomFeuille) {
   const NOM_DONNEES_ENTREE = "DONNEES_ENTREES";
 
@@ -267,13 +301,18 @@ async function EtapeUne(etape, nomFeuille) {
   });
 }
 
+/**
+ * génère les formules pour les étapes qui ne sont pas la première selon les parents
+ * @param {string[]} etape ligne de la base d'étapes
+ * @param {string} nomFeuilleTarget nom de la feuille cible
+ * @param {string[][]} parents tableau contenant les lignes de la base de parents qui sont les parents de l'étape
+ * @param {string[][]} baseEtapes base d'étapes
+ */
 async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes) {
   const NOM_COLONNE_TYPE_DE_CHAMP = "TYPE_DE_CHAMP";
   await Excel.run(async (context) => {
     //nom de l'étape
     const nomEtapeTarget = etape[1];
-    //id de l'étape
-    const idEtape = etape[0];
     //get worksheet
     const worksheetTarget = context.workbook.worksheets.getItem(nomFeuilleTarget);
     await context.sync();
@@ -333,6 +372,13 @@ async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes) {
   });
 }
 
+/**
+ * fonction qui calcule le débit pour une cellule
+ * @param {string[][][]} tabSources tableau qui contient les adresses des cellules des parents de l'étape [parent][ligne][colonne]
+ * @param {int} i numéro de la ligne de la cellule
+ * @param {int} j numéro de la colonne de la cellule
+ * @returns {string} formule de la cellule selon la formule de débit (voir doc)
+ */
 function calculeCelluleDebit(tabSources, i, j, parents) {
   let result = "=";
   //boucle for sur les sources ou les parents
@@ -343,6 +389,13 @@ function calculeCelluleDebit(tabSources, i, j, parents) {
   return result;
 }
 
+/**
+ * fonction qui calcule la cooncentration pour une cellule
+ * @param {string[][][]} tabSources tableau qui contient les adresses des cellules des parents de l'étape [parent][ligne][colonne]
+ * @param {int} i numéro de la ligne de la cellule
+ * @param {int} j numéro de la colonne de la cellule
+ * @returns {string} formule de la cellule selon la formule de concentration (voir doc)
+ */
 function calculeCelluleConcentration(tabSources, i, j, parents) {
   let result = "=(";
   for (let k = 0; k < parents.length; k++) {
@@ -357,6 +410,14 @@ function calculeCelluleConcentration(tabSources, i, j, parents) {
   result += ")";
   return result;
 }
+
+/**
+ * fonction qui calcule la température pour une cellule
+ * @param {string[][][]} tabSources tableau qui contient les adresses des cellules des parents de l'étape [parent][ligne][colonne]
+ * @param {int} i numéro de la ligne de la cellule
+ * @param {int} j numéro de la colonne de la cellule
+ * @returns {string} formule de la cellule selon le calcul de la température (voir doc)
+ */
 function calculeCelluleTemperature(tabSources, i, j, parents) {
   let result = "=(";
   for (let k = 0; k < parents.length; k++) {
@@ -372,10 +433,24 @@ function calculeCelluleTemperature(tabSources, i, j, parents) {
   return result;
 }
 
-function calculeCellulePH(tabSources, i, j, parents) {
+/**
+ * fonction qui calcule le PH pour une cellule
+ * @param {string[][][]} tabSources tableau qui contient les adresses des cellules des parents de l'étape [parent][ligne][colonne]
+ * @param {int} i numéro de la ligne de la cellule
+ * @param {int} j numéro de la colonne de la cellule
+ * @returns {string} formule de la cellule
+ */
+function calculeCellulePH(tabSources, i, j) {
   return `=${tabSources[0][i][j]}`;
 }
 
+/**
+ * fonction qui retourne les colonnes d'une table dont le nom de colonne commence par un préfixe
+ * @param {string} nomFeuille nom du worksheet
+ * @param {string} nomTableau nom de la table
+ * @param {*} debutEnTete préfixe du nom de colonne
+ * @returns {Promise<Array<Array<string>>>} tableau de colonnes
+ */
 async function obtenirColonnesParNomEnTete(nomFeuille, nomTableau, debutEnTete) {
   const result = [];
   await Excel.run(async (context) => {
@@ -399,6 +474,12 @@ async function obtenirColonnesParNomEnTete(nomFeuille, nomTableau, debutEnTete) 
   return result;
 }
 
+/**
+ * Récupère les adresses de toutes les cellules de la plage de données d'une table dont le nom commence par une chaîne spécifiée
+ * @param {string} nomWorksheet nom de la feuille
+ * @param {string} tablePrefix prefixe du nom de la table
+ * @returns {string[]} tableau des adresses des cellules de la plage de données de la table
+ */
 async function getTableAddressesByPrefix(nomWorksheet, tablePrefix) {
   try {
     // Charger l'API Excel
@@ -444,9 +525,13 @@ async function getTableAddressesByPrefix(nomWorksheet, tablePrefix) {
   }
 }
 
-
+/**
+ * Fonction qui permet d'afficher une popup d'erreur
+ * @param {string} error message d'erreur
+ */
 function errorPopUp(error) {
   Office.context.ui.displayDialogAsync(
+    // eslint-disable-next-line no-undef
     window.location.origin + "/error.html?erreur=" + error,
     { height: 25, width: 35 },
     (result) => {
@@ -459,6 +544,7 @@ function errorPopUp(error) {
   );
 }
 
+/*
 function openDialog(message) {
   Office.context.ui.displayDialogAsync(
     window.location.origin + "/popup.html?message=" + message,
@@ -472,3 +558,4 @@ function openDialog(message) {
     }
   );
 }
+*/
