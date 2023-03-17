@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0" xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="TaskPaneApp">
   <Id>378b3d05-e29b-4531-b54b-33d182564340</Id>
-  <Version>1.2.0.0</Version>
+  <Version>1.2.0.2</Version>
   <ProviderName>cabinetmerlin</ProviderName>
   <DefaultLocale>fr-FR</DefaultLocale>
   <DisplayName DefaultValue="Application traitement des eaux"/>
@@ -10,7 +10,7 @@
   <HighResolutionIconUrl DefaultValue="https://csb10032001a6800cf9.z6.web.core.windows.net/icon-64.png"/> <!--"https://localhost:3000/assets/icon-64.png" -->  
   <SupportUrl DefaultValue="https://ivactis.com/"/>
   <AppDomains>
-    <AppDomain>https://cabinetmerlin.onmicrosoft.com</AppDomain> <!-- This is the default value. -->
+    <AppDomain>https://cabinetmerlin.onmicrosoft.com</AppDomain>
   </AppDomains>
   <Hosts>
     <Host Name="Workbook"/>
@@ -64,11 +64,12 @@
       <bt:Images>
         <bt:Image id="Icon.16x16" DefaultValue="https://csb10032001a6800cf9.z6.web.core.windows.net/assets/icon-16.png"/><!--"https://localhost:3000/assets/icon-16.png" -->  
         <bt:Image id="Icon.32x32" DefaultValue="https://csb10032001a6800cf9.z6.web.core.windows.net/assets/icon-32.png"/> <!--"https://localhost:3000/assets/icon-32.png" -->  
-        <bt:Image id="Icon.80x80" DefaultValue="https://csb10032001a6800cf9.z6.web.core.windows.net/icon-80.png"/> <!--"https://localhost:3000/assets" -->  
+        <bt:Image id="Icon.80x80" DefaultValue="https://csb10032001a6800cf9.z6.web.core.windows.net/assets/icon-80.png"/> <!--"https://localhost:3000/assets" -->  
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://ivactis.com/"/>
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://go.microsoft.com/fwlink/?LinkId=276812"/>
         <bt:Url id="Taskpane.Url" DefaultValue="https://csb10032001a6800cf9.z6.web.core.windows.net/taskpane.html"/> <!--"https://localhost:3000/taskpane.html" -->  
+        <bt:Url id="Commands.Url" DefaultValue="https://csb10032001a6800cf9.z6.web.core.windows.net/commands.html"/> <!--"https://localhost:3000/taskpane.html" -->  
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="Add-in pour traitement des eaux"/>

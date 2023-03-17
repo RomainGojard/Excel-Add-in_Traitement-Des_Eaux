@@ -31,18 +31,19 @@ async function app() {
       const baseEtapes = BDD[0];
       const baseParents = BDD[1];
       const worksheetsEtapes = await initSheets(baseEtapes);
-      baseEtapes.forEach(async (etape) => {
+      await baseEtapes.forEach(async (etape) => {
         if (etape[0] == 1) {
-          await EtapeUne(etape, worksheetsEtapes[0]);
+          EtapeUne(etape, worksheetsEtapes[0]);
         } else {
           const idEtape = etape[0];
           // obtenir les parents de l'étape en cours depuis la base parents
           const parents = baseParents.filter((ligne) => ligne[1] == idEtape);
-          await EtapeN(etape, worksheetsEtapes[idEtape - 1], parents, baseEtapes, worksheetsEtapes);
+          EtapeN(etape, worksheetsEtapes[idEtape - 1], parents, baseEtapes, worksheetsEtapes);
         }
       });
       await context.sync();
-      openDialog("Le processus a fonctionné avec succès !");
+      //openDialog("Le processus a fonctionné avec succès !");
+      console.log("Le processus a fonctionné avec succès !");
       return context;
     } catch (error) {
       // afficher le message d'erreur dans une popup
@@ -419,8 +420,7 @@ async function getTableAddressesByPrefix(nomWorksheet, tablePrefix) {
       }
       // Récupérer les adresses de chaque cellule de la plage de données
       const range = table.getDataBodyRange();
-      range.load("address");
-      range.load("values/length");
+      range.load(["address", "values/length"]);
       await context.sync();
       // Stocker les adresses dans un tableau
       const rowCount = range.values.length;
@@ -444,7 +444,6 @@ async function getTableAddressesByPrefix(nomWorksheet, tablePrefix) {
   }
 }
 
-let dialog = null;
 
 function errorPopUp(error) {
   Office.context.ui.displayDialogAsync(
