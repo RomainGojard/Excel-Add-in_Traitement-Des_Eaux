@@ -34,18 +34,19 @@ async function app() {
       const baseEtapes = BDD[0];
       const baseParents = BDD[1];
       const worksheetsEtapes = await initSheets(baseEtapes);
+      const allTables = await initAllTables();
       await baseEtapes.forEach(async (etape) => {
         if (etape[0] == 1) {
-          EtapeUne(etape, worksheetsEtapes[0]);
+          await EtapeUne(etape, worksheetsEtapes[0], allTables);
         } else {
           const idEtape = etape[0];
           // obtenir les parents de l'étape en cours depuis la base parents
           const parents = baseParents.filter((ligne) => ligne[1] == idEtape);
-          EtapeN(etape, worksheetsEtapes[idEtape - 1], parents, baseEtapes, worksheetsEtapes);
+          await EtapeN(etape, worksheetsEtapes[idEtape - 1], parents, baseEtapes, allTables);
         }
       });
       await context.sync();
-      //openDialog("Le processus a fonctionné avec succès !");
+      openDialog("Le processus a fonctionné avec succès !");
       console.log("Le processus a fonctionné avec succès !");
       return context;
     } catch (error) {
@@ -66,7 +67,6 @@ async function initSheets(baseEtapes) {
   return new Promise((resolve, reject) => {
     Excel.run(async (context) => {
       let worksheetsEtapes = [];
-      let newSheet = null;
       const sheetBDD = context.workbook.worksheets.getItem(SHEET_NAME_BDD);
       for (const etape of baseEtapes) {
         const id = etape[0]; //premier élément de la rangée est le nom de l'étape
@@ -259,7 +259,7 @@ async function deleteOldEtapes(tabNomWorksheet) {
  * @param {string[]} etape ligne de la base d'étapes
  * @param {string} nomFeuille nom de la feuille cible
  */
-async function EtapeUne(etape, nomFeuille) {
+async function EtapeUne(etape, nomFeuille, allTables) {
   const NOM_DONNEES_ENTREE = "DONNEES_ENTREES";
 
   return Excel.run(async (context) => {
@@ -279,7 +279,7 @@ async function EtapeUne(etape, nomFeuille) {
       NOM_DONNEES_ENTREE
     );
     //const colonnesEtapeUneEntree = await obtenirColonnesParNomEnTete(SHEET_NAME_TABLE_CONFIG, TABLE_CONFIG_NOM, nomEtape + "_Entrée");
-    const colonnesEtapeUneEntree = await getTableAddressesByPrefix(nomFeuille, nomEtape + "_Entree");
+    const colonnesEtapeUneEntree = allTables[nomFeuille + "|" + nomEtape + "_Entree"];
     //vérifier que les colonnes fdonnes entrees et colonnesEtapeUneEntree ont la même longueur
     if (colonnesDonnesEntrees[0].length !== colonnesEtapeUneEntree.length) {
       console.log(colonnesDonnesEntrees[0] + " vs " + colonnesEtapeUneEntree[0]);
@@ -308,7 +308,7 @@ async function EtapeUne(etape, nomFeuille) {
  * @param {string[][]} parents tableau contenant les lignes de la base de parents qui sont les parents de l'étape
  * @param {string[][]} baseEtapes base d'étapes
  */
-async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes) {
+async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes, allTables) {
   const NOM_COLONNE_TYPE_DE_CHAMP = "TYPE_DE_CHAMP";
   await Excel.run(async (context) => {
     //nom de l'étape
@@ -326,10 +326,10 @@ async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes) {
       const nomEtapeParent = baseEtapes.find((row) => row[0] === parent[0])[1];
       //obtenir le nom du worksheet du parent
       const nomWorksheetParent = nomEtapeParent + "|" + parent[0];
-      const result = await getTableAddressesByPrefix(nomWorksheetParent, nomEtapeParent + "_Sortie");
+      const result = allTables[nomWorksheetParent + "|" + nomEtapeParent + "_Sortie"];
       tabSources.push(result);
     });
-    const colonnesTarget = await getTableAddressesByPrefix(nomFeuilleTarget, nomEtapeTarget + "_Entree");
+    const colonnesTarget = allTables[nomFeuilleTarget + "|" + nomEtapeTarget + "_Entree"];
     const colonneTypeChamp = await obtenirColonnesParNomEnTete(
       SHEET_NAME_TABLE_CONFIG,
       TABLE_CONFIG_NOM,
@@ -525,6 +525,64 @@ async function getTableAddressesByPrefix(nomWorksheet, tablePrefix) {
   }
 }
 
+async function initAllTables() {
+  var tablesDict = {};
+  try {
+    // Charger l'API Excel
+    await Excel.run(async (context) => {
+      var tables = context.workbook.tables;
+      // chargement des tables
+      tables.load("items/name");
+      await context.sync();
+      // itération à travers toutes les tables
+      for (var i = 0; i < tables.items.length; i++) {
+        var table = tables.items[i];
+        var tableName = table.name;
+        // si le nom de la table ne contient pas "Entree" ou "Sortie" on passe à la table suivante
+        if (!tableName.includes("Entree") && !tableName.includes("Sortie")) {
+          continue;
+        }
+        // obtenir le nom du classeur de la table
+        var worksheet = table.worksheet;
+        worksheet.load("name");
+        const range = table.getDataBodyRange();
+        range.load("address, values/length");
+        await context.sync();
+        const rowCount = range.values.length;
+        var worksheetName = worksheet.name;
+        let index = tableName.lastIndexOf("e");
+        let tableShortName = worksheetName + "|" + tableName.slice(0, index + 1);
+        const addresses = range.address;
+        //
+        const prefixAdresse = addresses.slice(0, addresses.indexOf("!") + 1);
+        const premiereColonne = addresses[addresses.indexOf("!") + 1];
+        const premiereLigne = Number(addresses[addresses.indexOf("!") + 2]);
+        // construire tableau de 4 colonnes possibles commençant à la première colonne
+        const colonnes = [
+          premiereColonne,
+          String.fromCharCode(premiereColonne.charCodeAt(0) + 1),
+          String.fromCharCode(premiereColonne.charCodeAt(0) + 2),
+          String.fromCharCode(premiereColonne.charCodeAt(0) + 3),
+        ];
+        // on construit un tableau contenant chaque adresse de cellule à partir de la range 'adresses' en parcourant les lignes de peremiereLigne à premiereLigne + range.values.length et les colonnes de colonnes
+        const constTabAddresses = [];
+        for (let row = premiereLigne; row < premiereLigne + rowCount; row++) {
+          const rowAdresses = [];
+          for (let col = 0; col < colonnes.length; col++) {
+            rowAdresses.push(prefixAdresse + colonnes[col] + row);
+          }
+          constTabAddresses.push(rowAdresses);
+        }
+        tablesDict[tableShortName] = constTabAddresses;
+      }
+    });
+    return tablesDict;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+}
+
 /**
  * Fonction qui permet d'afficher une popup d'erreur
  * @param {string} error message d'erreur
@@ -544,7 +602,6 @@ function errorPopUp(error) {
   );
 }
 
-/*
 function openDialog(message) {
   Office.context.ui.displayDialogAsync(
     window.location.origin + "/popup.html?message=" + message,
@@ -558,4 +615,3 @@ function openDialog(message) {
     }
   );
 }
-*/
