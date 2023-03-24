@@ -45,9 +45,11 @@
       message = message.replace(/%20/g, " ");
 
       // enlever le reste de l'url, ce qui est après un &
-      var pos = message.indexOf("&");
+      var pos = message.indexOf("=");
       if (pos > 0) {
         message = message.substring(0, pos);
+        pos = message.indexOf("=");
+        message = message.substring(pos + 1);
       }
 
       document.getElementById("message").innerHTML = message;

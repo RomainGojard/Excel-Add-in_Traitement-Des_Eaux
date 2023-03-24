@@ -49,6 +49,8 @@
       var pos = erreur.indexOf("&");
       if (pos > 0) {
         erreur = erreur.substring(0, pos);
+        pos = erreur.indexOf("=");
+        erreur = erreur.substring(pos + 1);
       }
 
       document.getElementById("erreur").innerHTML = erreur;

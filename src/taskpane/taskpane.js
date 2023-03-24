@@ -48,7 +48,12 @@ async function app() {
 async function runProcess() {
   return new Promise(async (resolve, reject) => {
     try {
-      await sortBDD();
+      await sortBDD().catch((error) => {
+        throw (
+          error +
+          " - La base de données est introuvable. Veuillez vérifier que vous utilisez l'application depuis le modèle prévu"
+        );
+      });
       const BDD = await getBDD();
       const baseEtapes = BDD[0];
       const baseParents = BDD[1];
@@ -295,7 +300,7 @@ async function EtapeUne(etape, nomFeuille, allTables) {
     const colonnesEtapeUneEntree = allTables[nomFeuille + "|" + nomEtape + "_Entree"];
     //vérifier que les colonnes fdonnes entrees et colonnesEtapeUneEntree ont la même longueur
     if (colonnesDonnesEntrees[0].length !== colonnesEtapeUneEntree.length) {
-      console.log(colonnesDonnesEntrees[0] + " vs " + colonnesEtapeUneEntree[0]);
+      console.log(colonnesDonnesEntrees[0] + " vs " + colonnesEtapeUneEntree);
       throw new Error("Les colonnes données d'entrées et colonnesEtapeUneEntree n'ont pas la même longueur : \n");
     }
     // parcourir pour i allant de 1 à la longueur de la colonne des données d'entrées
@@ -569,7 +574,7 @@ async function initAllTables() {
         //
         const prefixAdresse = addresses.slice(0, addresses.indexOf("!") + 1);
         const premiereColonne = addresses[addresses.indexOf("!") + 1];
-        const premiereLigne = Number(addresses[addresses.indexOf("!") + 2]);
+        const premiereLigne = Number(addresses.slice(addresses.indexOf("!") + 2, addresses.indexOf(":")));
         // construire tableau de 4 colonnes possibles commençant à la première colonne
         const colonnes = [
           premiereColonne,
@@ -578,7 +583,7 @@ async function initAllTables() {
           String.fromCharCode(premiereColonne.charCodeAt(0) + 3),
         ];
         // on construit un tableau contenant chaque adresse de cellule à partir de la range 'adresses' en parcourant les lignes de peremiereLigne à premiereLigne + range.values.length et les colonnes de colonnes
-        const constTabAddresses = [];
+        const constTabAddresses = [tableShortName];
         for (let row = premiereLigne; row < premiereLigne + rowCount; row++) {
           const rowAdresses = [];
           for (let col = 0; col < colonnes.length; col++) {
@@ -589,6 +594,7 @@ async function initAllTables() {
         tablesDict[tableShortName] = constTabAddresses;
       }
     });
+    console.log(tablesDict);
     return tablesDict;
   } catch (error) {
     console.error(error);
