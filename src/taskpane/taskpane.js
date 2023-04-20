@@ -58,7 +58,7 @@ async function runProcess() {
       const baseEtapes = BDD[0];
       const baseParents = BDD[1];
       const worksheetsEtapes = await initSheets(baseEtapes);
-      const allTables = await initAllTables();
+      let allTables = await initAllTables();
       for (let i = 0; i < baseEtapes.length; i++) {
         const etape = baseEtapes[i];
         if (etape[0] == 1) {
@@ -105,9 +105,10 @@ async function initSheets(baseEtapes) {
         await context.sync();
         worksheetsEtapes.push(nomFeuille);
       }
-      await context.sync();
       deleteOldEtapes(worksheetsEtapes);
+      await context.sync();
       resolve(worksheetsEtapes);
+      await context.sync();
     }).catch((error) => reject(error));
   });
 }
@@ -470,7 +471,7 @@ function calculeCellulePH(tabSources, i, j) {
  * @returns {Promise<Array<Array<string>>>} tableau de colonnes
  */
 async function obtenirColonnesParNomEnTete(nomFeuille, nomTableau, debutEnTete) {
-  const result = [];
+  let result = [];
   await Excel.run(async (context) => {
     const worksheet = context.workbook.worksheets.getItem(nomFeuille);
     const table = worksheet.tables.getItem(nomTableau).getRange().getUsedRange();
@@ -544,30 +545,31 @@ async function getTableAddressesByPrefix(nomWorksheet, tablePrefix) {
 }
 
 async function initAllTables() {
-  var tablesDict = {};
+  let tablesDict = {};
   try {
     // Charger l'API Excel
     await Excel.run(async (context) => {
+      await context.sync();
       var tables = context.workbook.tables;
       // chargement des tables
       tables.load("items/name");
       await context.sync();
       // itération à travers toutes les tables
-      for (var i = 0; i < tables.items.length; i++) {
-        var table = tables.items[i];
-        var tableName = table.name;
+      for (let i = 0; i < tables.items.length; i++) {
+        let table = tables.items[i];
+        let tableName = table.name;
         // si le nom de la table ne contient pas "Entree" ou "Sortie" on passe à la table suivante
         if (!tableName.includes("Entree") && !tableName.includes("Sortie")) {
           continue;
         }
         // obtenir le nom du classeur de la table
-        var worksheet = table.worksheet;
+        let worksheet = table.worksheet;
         worksheet.load("name");
         const range = table.getDataBodyRange();
         range.load("address, values/length");
         await context.sync();
         const rowCount = range.values.length;
-        var worksheetName = worksheet.name;
+        let worksheetName = worksheet.name;
         let index = tableName.lastIndexOf("e");
         let tableShortName = worksheetName + "|" + tableName.slice(0, index + 1);
         const addresses = range.address;
@@ -594,7 +596,6 @@ async function initAllTables() {
         tablesDict[tableShortName] = constTabAddresses;
       }
     });
-    console.log(tablesDict);
     return tablesDict;
   } catch (error) {
     console.error(error);
