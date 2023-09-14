@@ -4,5 +4,7 @@ Pour une maj, pas besoin de changer le manifest côté client, il faut juste re 
 
 Dans le cas d'un changement de storage azure (nouveau dépôt, ...), il faudra aussi mettre à jour le manifest chez le client en changeant les url faisant référence à l'azure storage (commentaires devant) et changer le numéro de version.
 
+Pour passer le projet en test il faut repasser les url sur local host et lancer un npm build puis npm run pour faire tourner l' add-in en localhost
+
 Pour avoir plus d'informations sur le projet, voir dans l'équipe Teams Traitement des eaux de Cabinet Merlin.
  
