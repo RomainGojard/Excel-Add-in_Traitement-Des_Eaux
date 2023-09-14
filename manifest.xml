@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0" xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="TaskPaneApp">
   <Id>378b3d05-e29b-4531-b54b-33d182564340</Id>
-  <Version>1.3.0.0</Version>
+  <Version>1.4.0.0</Version>
   <ProviderName>cabinetmerlin</ProviderName>
   <DefaultLocale>fr-FR</DefaultLocale>
   <DisplayName DefaultValue="Application traitement des eaux"/>
   <Description DefaultValue="Office add-in pour l'équipe traitement des eaux de Cabinet Merlin"/>
-  <IconUrl DefaultValue="https://csb10032001a6800cf9.z6.web.core.windows.net//assets/icon-32.png"/><!--"https://localhost:3000/assets/icon-32.png" -->  
-  <HighResolutionIconUrl DefaultValue="https://csb10032001a6800cf9.z6.web.core.windows.net/icon-64.png"/> <!--"https://localhost:3000/assets/icon-64.png" -->  
+  <IconUrl DefaultValue="https://officeexceladdin.z6.web.core.windows.net/assets/icon-32.png"/><!--"URL_AZURE_STORAGE/assets/icon-32.png" -->  
+  <HighResolutionIconUrl DefaultValue="https://officeexceladdin.z6.web.core.windows.net/icon-64.png"/> <!--"URL_AZURE_STORAGE/assets/icon-64.png" -->  
   <SupportUrl DefaultValue="https://ivactis.com/"/>
   <AppDomains>
     <AppDomain>https://cabinetmerlin.onmicrosoft.com</AppDomain>
@@ -16,7 +16,7 @@
     <Host Name="Workbook"/>
   </Hosts>
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://csb10032001a6800cf9.z6.web.core.windows.net/taskpane.html"/> <!--"https://localhost:3000/taskpane.html" -->  
+    <SourceLocation DefaultValue="https://officeexceladdin.z6.web.core.windows.net/taskpane.html"/> <!--"URL_AZURE_STORAGE/taskpane.html" -->  
   </DefaultSettings>
   <Permissions>ReadWriteDocument</Permissions>
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
@@ -62,15 +62,15 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="https://csb10032001a6800cf9.z6.web.core.windows.net/assets/icon-16.png"/><!--"https://localhost:3000/assets/icon-16.png" -->  
-        <bt:Image id="Icon.32x32" DefaultValue="https://csb10032001a6800cf9.z6.web.core.windows.net/assets/icon-32.png"/> <!--"https://localhost:3000/assets/icon-32.png" -->  
-        <bt:Image id="Icon.80x80" DefaultValue="https://csb10032001a6800cf9.z6.web.core.windows.net/assets/icon-80.png"/> <!--"https://localhost:3000/assets" -->  
+        <bt:Image id="Icon.16x16" DefaultValue="https://officeexceladdin.z6.web.core.windows.net/assets/icon-16.png"/><!--"URL_AZURE_STORAGE/assets/icon-16.png" -->  
+        <bt:Image id="Icon.32x32" DefaultValue="https://officeexceladdin.z6.web.core.windows.net/assets/icon-32.png"/> <!--"URL_AZURE_STORAGE/assets/icon-32.png" -->  
+        <bt:Image id="Icon.80x80" DefaultValue="https://officeexceladdin.z6.web.core.windows.net/assets/icon-80.png"/> <!--"URL_AZURE_STORAGE/assets" -->  
       </bt:Images>
       <bt:Urls>
         <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://go.microsoft.com/fwlink/?LinkId=276812"/>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://csb10032001a6800cf9.z6.web.core.windows.net/taskpane.html"/> <!--"https://localhost:3000/taskpane.html" -->  
-        <bt:Url id="Commands.Url" DefaultValue="https://csb10032001a6800cf9.z6.web.core.windows.net/commands.html"/> <!--"https://localhost:3000/taskpane.html" -->  
-      </bt:Urls>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://officeexceladdin.z6.web.core.windows.net/taskpane.html"/> <!--"URL_AZURE_STORAGE/taskpane.html" -->  
+        <bt:Url id="Commands.Url" DefaultValue="https://officeexceladdin.z6.web.core.windows.net/commands.html"/> <!--"URL_AZURE_STORAGE/taskpane.html" -->  
+      </bt:Urls>      
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="Office add-in pour l'équipe traitement des eaux de Cabinet Merlin."/>
         <bt:String id="CommandsGroup.Label" DefaultValue="Application traitement des eaux"/>

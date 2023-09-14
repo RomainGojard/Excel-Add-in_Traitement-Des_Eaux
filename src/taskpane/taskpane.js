@@ -11,6 +11,9 @@ var BASE_PARENTS_NOM_TABLE = "baseParents";
 var SHEET_NAME_DONNEES_ENTREE = "Données_entrée";
 var SHEET_NAME_TABLE_CONFIG = "Configuration - Entrées Sorties";
 var TABLE_CONFIG_NOM = "tableConfig";
+var LIGNE_PERTES_EN_EAU_SUR_CETTE_ETAPES_TABLEAU_SORTIE = 4;
+var ADRESSES_PERTES_EN_EAU_DONNES_ENTREE = ["!C10", "!D10", "!E10", "!F10"];
+var ADRESSES_DEBIT_JOURNALIER_EB_DONNES_ENTREE = ["!C12", "!D12", "!E12", "!F12"];
 
 Office.onReady((info) => {
   if (info.host === Office.HostType.Excel) {
@@ -69,6 +72,7 @@ async function runProcess() {
           await EtapeN(etape, worksheetsEtapes[idEtape - 1], parents, baseEtapes, allTables);
         }
       }
+      calculPertesEnEau(allTables, baseEtapes);
       resolve();
     } catch (error) {
       reject(error);
@@ -348,6 +352,7 @@ async function EtapeN(etape, nomFeuilleTarget, parents, baseEtapes, allTables) {
       const result = allTables[nomWorksheetParent + "|" + nomEtapeParent + "_Sortie"];
       tabSources.push(result);
     });
+    console.log(tabSources);
     const colonnesTarget = allTables[nomFeuilleTarget + "|" + nomEtapeTarget + "_Entree"];
     const colonneTypeChamp = await obtenirColonnesParNomEnTete(
       SHEET_NAME_TABLE_CONFIG,
@@ -418,12 +423,12 @@ function calculeCelluleDebit(tabSources, i, j, parents) {
 function calculeCelluleConcentration(tabSources, i, j, parents) {
   let result = "=(";
   for (let k = 0; k < parents.length; k++) {
-    result += `(${tabSources[k][i][0]}*${tabSources[k][i][j]}*${parents[k][2]}/100)+`;
+    result += `(${tabSources[k][1][j]}*${tabSources[k][i][j]}*${parents[k][2]}/100)+`;
   }
   result = result.slice(0, -1);
   result += ") / (";
   for (let k = 0; k < parents.length; k++) {
-    result += `(${tabSources[k][i][0]}*${parents[k][2]}/100)+`;
+    result += `(${tabSources[k][1][j]}*${parents[k][2]}/100)+`;
   }
   result = result.slice(0, -1);
   result += ")";
@@ -440,12 +445,12 @@ function calculeCelluleConcentration(tabSources, i, j, parents) {
 function calculeCelluleTemperature(tabSources, i, j, parents) {
   let result = "=(";
   for (let k = 0; k < parents.length; k++) {
-    result += `(${tabSources[k][i][0]}*${tabSources[k][i][j]}*${parents[k][2]}/100)+`;
+    result += `(${tabSources[k][1][j]}*${tabSources[k][i][j]}*${parents[k][2]}/100)+`;
   }
   result = result.slice(0, -1);
   result += ") / (";
   for (let k = 0; k < parents.length; k++) {
-    result += `(${tabSources[k][i][0]}*${parents[k][2]}/100)+`;
+    result += `(${tabSources[k][1][j]}*${parents[k][2]}/100)+`;
   }
   result = result.slice(0, -1);
   result += ")";
@@ -620,6 +625,64 @@ function errorPopUp(error) {
       });
     }
   );
+}
+
+async function calculPertesEnEau(allTables, baseEtapes) {
+  let resultCol0 = "=( ";
+  let resultCol1 = "=( ";
+  let resultCol2 = "=( ";
+  let resultCol3 = "=( ";
+  console.log(allTables);
+  baseEtapes.forEach((etape) => {
+    const nomTable = etape[1] + "|" + etape[0].toString() + "|" + etape[1] + "_Sortie";
+    const table = allTables[nomTable];
+    const ligne = table[LIGNE_PERTES_EN_EAU_SUR_CETTE_ETAPES_TABLEAU_SORTIE];
+    resultCol0 += ligne[0] + "+";
+    resultCol1 += ligne[1] + "+";
+    resultCol2 += ligne[2] + "+";
+    resultCol3 += ligne[3] + "+";
+  });
+  // on enlève le dernier +
+  resultCol0 = resultCol0.slice(0, resultCol0.length - 1);
+  resultCol1 = resultCol1.slice(0, resultCol1.length - 1);
+  resultCol2 = resultCol2.slice(0, resultCol2.length - 1);
+  resultCol3 = resultCol3.slice(0, resultCol3.length - 1);
+
+  resultCol0 += " ) / '" + SHEET_NAME_DONNEES_ENTREE + "'" + ADRESSES_DEBIT_JOURNALIER_EB_DONNES_ENTREE[0];
+  resultCol1 += " ) / '" + SHEET_NAME_DONNEES_ENTREE + "'" + ADRESSES_DEBIT_JOURNALIER_EB_DONNES_ENTREE[1];
+  resultCol2 += " ) / '" + SHEET_NAME_DONNEES_ENTREE + "'" + ADRESSES_DEBIT_JOURNALIER_EB_DONNES_ENTREE[2];
+  resultCol3 += " ) / '" + SHEET_NAME_DONNEES_ENTREE + "'" + ADRESSES_DEBIT_JOURNALIER_EB_DONNES_ENTREE[3];
+
+  console.log(resultCol0, resultCol1, resultCol2, resultCol3);
+
+  Excel.run(async function (context) {
+    //get données d'entrées
+    const donneesEntrees = context.workbook.worksheets.getItem(SHEET_NAME_DONNEES_ENTREE);
+    // Obtenez la plage de cellules qui contient la cellule à modifier
+    var range0 = donneesEntrees.getRange(
+      "'" + SHEET_NAME_DONNEES_ENTREE + "'" + ADRESSES_PERTES_EN_EAU_DONNES_ENTREE[0]
+    );
+    var range1 = donneesEntrees.getRange(
+      "'" + SHEET_NAME_DONNEES_ENTREE + "'" + ADRESSES_PERTES_EN_EAU_DONNES_ENTREE[1]
+    );
+    var range2 = donneesEntrees.getRange(
+      "'" + SHEET_NAME_DONNEES_ENTREE + "'" + ADRESSES_PERTES_EN_EAU_DONNES_ENTREE[2]
+    );
+    var range3 = donneesEntrees.getRange(
+      "'" + SHEET_NAME_DONNEES_ENTREE + "'" + ADRESSES_PERTES_EN_EAU_DONNES_ENTREE[3]
+    );
+    await context.sync();
+
+    // Modifiez la valeur de la cellule à "nouvelleValeur"
+    range0.formulas = [[resultCol0]];
+    range1.formulas = [[resultCol1]];
+    range2.formulas = [[resultCol2]];
+    range3.formulas = [[resultCol3]];
+    // Exécutez les modifications de la feuille de calcul
+    return context.sync();
+  }).catch(function (error) {
+    console.log("Une erreur est survenue : " + error);
+  });
 }
 
 function openDialog(message) {
